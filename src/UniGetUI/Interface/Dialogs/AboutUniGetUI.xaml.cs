@@ -1,7 +1,5 @@
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
-using UniGetUI.Core;
-using UniGetUI.Core.Logging;
 using UniGetUI.Core.Tools;
 using UniGetUI.Interface.Pages.AboutPages;
 
@@ -17,7 +15,7 @@ namespace UniGetUI.Interface
     public sealed partial class AboutUniGetUI : Page
     {
 
-
+        public event EventHandler? Close;
         int previousSelectedIndex = 0;
         public AboutUniGetUI()
         {
@@ -56,10 +54,15 @@ namespace UniGetUI.Interface
 
             SlideNavigationTransitionEffect slideNavigationTransitionEffect = currentSelectedIndex - previousSelectedIndex > 0 ? SlideNavigationTransitionEffect.FromRight : SlideNavigationTransitionEffect.FromLeft;
 
-            ContentFrame.Navigate(pageType, null, new SlideNavigationTransitionInfo() { Effect = slideNavigationTransitionEffect });
+            ContentFrame.Navigate(pageType, null, new SlideNavigationTransitionInfo { Effect = slideNavigationTransitionEffect });
 
             previousSelectedIndex = currentSelectedIndex;
 
+        }
+
+        private void CloseButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+        {
+            Close?.Invoke(this, new EventArgs());
         }
     }
 }

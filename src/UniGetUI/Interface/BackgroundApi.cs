@@ -1,12 +1,6 @@
 ﻿using Nancy;
 using Nancy.Hosting.Self;
-using System;
-using System.Drawing;
-using System.Text;
-using System.Threading.Tasks;
-using UniGetUI.Core;
 using UniGetUI.Core.Data;
-using UniGetUI.Core.IconEngine;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.SettingsEngine;
 using UniGetUI.Core.Tools;
@@ -54,7 +48,7 @@ namespace UniGetUI.Interface
                 NancyHost host;
                 try
                 {
-                    host = new NancyHost(new HostConfiguration() { RewriteLocalhost = false, }, new Uri("http://localhost:7058/"));
+                    host = new NancyHost(new HostConfiguration { RewriteLocalhost = false, }, new Uri("http://localhost:7058/"));
                     host.Start();
                 }
                 catch
@@ -243,7 +237,8 @@ namespace UniGetUI.Interface
 
                 MainApp.Instance.MainWindow.DispatcherQueue.TryEnqueue(() =>
                 {
-                    MainApp.Instance.MainWindow.NavigationPage.UpdatesPage.UpdateAllPackages();
+                    Logger.Info("[WIDGETS] Updating all packages");
+                    MainApp.Instance.MainWindow.NavigationPage.UpdatesPage.UpdateAll();
                 });
                 return 200;
             });
@@ -258,7 +253,8 @@ namespace UniGetUI.Interface
                     return 400;
 
                 MainApp.Instance.MainWindow.DispatcherQueue.TryEnqueue(() =>
-                {
+                { 
+                    Logger.Info($"[WIDGETS] Updating all packages for manager {Request.Query.@source}");
                     MainApp.Instance.MainWindow.NavigationPage.UpdatesPage.UpdateAllPackagesForManager(Request.Query.@source);
                 });
                 return 200;

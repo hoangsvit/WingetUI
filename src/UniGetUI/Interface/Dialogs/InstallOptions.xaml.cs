@@ -1,17 +1,10 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
-using UniGetUI.Core;
-using UniGetUI.PackageEngine.Classes;
-using UniGetUI.PackageEngine.Operations;
 using UniGetUI.Core.Language;
-using UniGetUI.Core.Logging;
+using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine.PackageClasses;
-using UniGetUI.Core.Tools;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -25,6 +18,7 @@ namespace UniGetUI.Interface.Dialogs
     {
         public InstallationOptions Options;
         public Package Package;
+        public event EventHandler? Close;
 
         public InstallOptionsPage(Package package, OperationType Operation) : this(package, Operation, new InstallationOptions(package)) { }
         public InstallOptionsPage(Package package, InstallationOptions options) : this(package, OperationType.None, options) { }
@@ -171,6 +165,11 @@ namespace UniGetUI.Interface.Dialogs
         private void ResetDir_Click(object sender, RoutedEventArgs e)
         {
             CustomInstallLocation.Text = "";
+        }
+
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close?.Invoke(this, new EventArgs());
         }
     }
 }
