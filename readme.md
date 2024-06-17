@@ -16,7 +16,9 @@ Check out the [Supported Package Managers Table](#supported-package-managers) fo
 **Disclaimer:** This project has no connection with any supported package managers — it's completely unofficial. Be aware that I, the developer of WingetUI, am NOT responsible for the downloaded apps.
 
 ![Endpoint Badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fmarticliment.com%2Fresources%2Fbadges%2Fdev-status.json)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/marticliment/WingetUI/dotnet-test.yml?branch=main&style=for-the-badge&label=Tests)<br>
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/marticliment/WingetUI/dotnet-test.yml?branch=main&style=for-the-badge&label=Tests)
+![Code Quality](https://img.shields.io/codacy/grade/1e95b227569048fb86ce08b835987353?style=for-the-badge)
+<br>
  
 ## Table of contents
  - **[WingetUI Homepage](https://www.marticliment.com/unigetui/)**
@@ -41,7 +43,7 @@ Check out the [Supported Package Managers Table](#supported-package-managers) fo
 
 **Install WingetUI through Winget:**    
 ```cmd
-winget install SomePythonThings.WingetUIStore
+winget install --exact wingetui --source winget
 ```
 
 **Install WingetUI through Scoop:**
@@ -128,6 +130,7 @@ To translate WingetUI to other languages or to update an old translation, please
 | <img src='https://flagcdn.com/ir.svg' width=20> &nbsp; Persian - فارسی‎ | 66% | [Imorate](https://github.com/Imorate), [itsarian](https://github.com/itsarian), [Mahdi-Hazrati](https://github.com/Mahdi-Hazrati), [smsi2001](https://github.com/smsi2001) |
 | <img src='https://flagcdn.com/fi.svg' width=20> &nbsp; Finnish - Suomi | 53% | [simakuutio](https://github.com/simakuutio) |
 | <img src='https://flagcdn.com/fr.svg' width=20> &nbsp; French - Français | 100% | BreatFR, Evans Costa, [PikPakPik](https://github.com/PikPakPik), Rémi Guerrero, [W1L7dev](https://github.com/W1L7dev) |
+| <img src='https://flagcdn.com/gu.svg' width=20> &nbsp; Gujarati - ગુજરાતી | 11% |  |
 | <img src='https://flagcdn.com/in.svg' width=20> &nbsp; Hindi - हिंदी | 56% | [atharva_xoxo](https://github.com/atharva_xoxo), [satanarious](https://github.com/satanarious) |
 | <img src='https://flagcdn.com/hr.svg' width=20> &nbsp; Croatian - Hrvatski | 60% | Stjepan Treger |
 | <img src='https://flagcdn.com/il.svg' width=20> &nbsp; Hebrew - עִבְרִית‎ | 50% | Oryan |
@@ -137,14 +140,14 @@ To translate WingetUI to other languages or to update an old translation, please
 | <img src='https://flagcdn.com/jp.svg' width=20> &nbsp; Japanese - 日本語 | 98% | [nob-swik](https://github.com/nob-swik), sho9029, [tacostea](https://github.com/tacostea), Yuki Takase |
 | <img src='https://flagcdn.com/kr.svg' width=20> &nbsp; Korean - 한국어 | 88% | [minbert](https://github.com/minbert), [shblue21](https://github.com/shblue21), [VenusGirl](https://github.com/VenusGirl) |
 | <img src='https://flagcdn.com/mk.svg' width=20> &nbsp; Macedonian - Македонски | 66% | LordDeatHunter |
-| <img src='https://flagcdn.com/no.svg' width=20> &nbsp; Norwegian (bokmål) | 99% | [yrjarv](https://github.com/yrjarv) |
-| <img src='https://flagcdn.com/no.svg' width=20> &nbsp; Norwegian (nynorsk) | 99% | [yrjarv](https://github.com/yrjarv) |
+| <img src='https://flagcdn.com/no.svg' width=20> &nbsp; Norwegian (bokmål) | 100% | [yrjarv](https://github.com/yrjarv) |
+| <img src='https://flagcdn.com/no.svg' width=20> &nbsp; Norwegian (nynorsk) | 100% | [yrjarv](https://github.com/yrjarv) |
 | <img src='https://flagcdn.com/nl.svg' width=20> &nbsp; Dutch - Nederlands | 100% | [abbydiode](https://github.com/abbydiode), [Stephan-P](https://github.com/Stephan-P) |
 | <img src='https://flagcdn.com/pl.svg' width=20> &nbsp; Polish - Polski | 99% | [KamilZielinski](https://github.com/KamilZielinski), [kwiateusz](https://github.com/kwiateusz), [RegularGvy13](https://github.com/RegularGvy13), [ThePhaseless](https://github.com/ThePhaseless) |
 | <img src='https://flagcdn.com/br.svg' width=20> &nbsp; Portuguese (Brazil) | 99% | [maisondasilva](https://github.com/maisondasilva), [ppvnf](https://github.com/ppvnf), [Rodrigo-Matsuura](https://github.com/Rodrigo-Matsuura), [wanderleihuttel](https://github.com/wanderleihuttel) |
 | <img src='https://flagcdn.com/pt.svg' width=20> &nbsp; Portuguese (Portugal) | 99% | [PoetaGA](https://github.com/PoetaGA), [Tiago_Ferreira](https://github.com/Tiago_Ferreira) |
 | <img src='https://flagcdn.com/ro.svg' width=20> &nbsp; Romanian - Română | 100% | [SilverGreen93](https://github.com/SilverGreen93), TZACANEL |
-| <img src='https://flagcdn.com/ru.svg' width=20> &nbsp; Russian - Русский | 99% | [bropines](https://github.com/bropines), [DvladikD](https://github.com/DvladikD), [flatron4eg](https://github.com/flatron4eg), [katrovsky](https://github.com/katrovsky), Sergey, sklart |
+| <img src='https://flagcdn.com/ru.svg' width=20> &nbsp; Russian - Русский | 100% | [bropines](https://github.com/bropines), [DvladikD](https://github.com/DvladikD), [flatron4eg](https://github.com/flatron4eg), [katrovsky](https://github.com/katrovsky), Sergey, sklart |
 | <img src='https://flagcdn.com/sk.svg' width=20> &nbsp; Slovak - Slovenčina | 10% | [Luk164](https://github.com/Luk164) |
 | <img src='https://flagcdn.com/rs.svg' width=20> &nbsp; Serbian - Srpski | 70% | [daVinci13](https://github.com/daVinci13), Nemanja Djurcic |
 | <img src='https://flagcdn.com/al.svg' width=20> &nbsp; Albanian - Shqip | 100% | [RDN000](https://github.com/RDN000) |
@@ -152,13 +155,13 @@ To translate WingetUI to other languages or to update an old translation, please
 | <img src='https://flagcdn.com/si.svg' width=20> &nbsp; Slovene - Slovenščina | 99% | [rumplin](https://github.com/rumplin) |
 | <img src='https://flagcdn.com/ph.svg' width=20> &nbsp; Tagalog - Tagalog | 15% | lasersPew |
 | <img src='https://flagcdn.com/th.svg' width=20> &nbsp; Thai - ภาษาไทย | 81% | [apaeisara](https://github.com/apaeisara), [dulapahv](https://github.com/dulapahv) |
-| <img src='https://flagcdn.com/tr.svg' width=20> &nbsp; Turkish - Türkçe | 99% | [ahmetozmtn](https://github.com/ahmetozmtn), [dogancanyr](https://github.com/dogancanyr), [gokberkgs](https://github.com/gokberkgs) |
+| <img src='https://flagcdn.com/tr.svg' width=20> &nbsp; Turkish - Türkçe | 100% | [ahmetozmtn](https://github.com/ahmetozmtn), [dogancanyr](https://github.com/dogancanyr), [gokberkgs](https://github.com/gokberkgs) |
 | <img src='https://flagcdn.com/ua.svg' width=20> &nbsp; Ukranian - Yкраї́нська | 59% | Artem Moldovanenko, Operator404 |
 | <img src='https://flagcdn.com/vn.svg' width=20> &nbsp; Vietnamese - Tiếng Việt | 99% | [legendsjoon](https://github.com/legendsjoon), [txavlog](https://github.com/txavlog) |
-| <img src='https://flagcdn.com/cn.svg' width=20> &nbsp; Simplified Chinese (China) | 99% | Aaron Liu, adfnekc, [arthurfsy2](https://github.com/arthurfsy2), [bai0012](https://github.com/bai0012), BUGP Association, ciaran, CnYeSheng, Cololi, [FloatStream](https://github.com/FloatStream), [SpaceTimee](https://github.com/SpaceTimee), Yisme |
+| <img src='https://flagcdn.com/cn.svg' width=20> &nbsp; Simplified Chinese (China) | 100% | Aaron Liu, adfnekc, [arthurfsy2](https://github.com/arthurfsy2), [bai0012](https://github.com/bai0012), BUGP Association, ciaran, CnYeSheng, Cololi, [FloatStream](https://github.com/FloatStream), [SpaceTimee](https://github.com/SpaceTimee), Yisme |
 | <img src='https://flagcdn.com/tw.svg' width=20> &nbsp; Traditional Chinese (Taiwan) | 99% | Aaron Liu, CnYeSheng, Cololi, [Henryliu880922](https://github.com/Henryliu880922), [yrctw](https://github.com/yrctw) |
 
-Last updated: Mon Jun  3 14:34:01 2024
+Last updated: Fri Jun 14 13:24:31 2024
 <!-- END Autogenerated translations -->
 
 

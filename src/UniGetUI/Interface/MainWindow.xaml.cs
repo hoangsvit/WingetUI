@@ -61,7 +61,7 @@ namespace UniGetUI.Interface
         /* END INTEROP STUFF */
 
         TaskbarIcon? TrayIcon;
-
+        bool HasLoadedLastGeometry = false;
 
         public MainView NavigationPage;
         public Grid ContentRoot;
@@ -82,8 +82,7 @@ namespace UniGetUI.Interface
             SetTitleBar(__content_root);
             ContentRoot = __content_root;
             ApplyTheme();
-            RestoreSize();
-
+            
             SizeChanged += (s, e) => { SaveGeometry(); };
     
             AppWindow.SetIcon(Path.Join(CoreData.UniGetUIExecutableDirectory, "Assets", "Images", "icon.ico"));
@@ -129,7 +128,7 @@ namespace UniGetUI.Interface
         /// <param name="args"></param>
         public async void HandleClosingEvent(AppWindow sender, AppWindowClosingEventArgs args)
         {
-            SaveGeometry();
+            SaveGeometry(Force: true);
             if (!Settings.Get("DisableSystemTray"))
             {
                 args.Cancel = true;
@@ -167,6 +166,12 @@ namespace UniGetUI.Interface
 
         public new void Activate()
         {
+            if (!HasLoadedLastGeometry)
+            {
+                RestoreGeometry();
+                HasLoadedLastGeometry = true;
+            }
+
             SetForegroundWindow(GetWindowHandle());
             if (NavigationPage != null && NavigationPage.InstalledPage != null)
                 _ = NavigationPage.InstalledPage.LoadPackages();
@@ -477,14 +482,17 @@ namespace UniGetUI.Interface
             await Task.Delay(400);
         }
 
-        private async void SaveGeometry()
+        private async void SaveGeometry(bool Force = false)
         {
-            int old_width = AppWindow.Size.Width;
-            int old_height = AppWindow.Size.Height;
-            await Task.Delay(100);
+            if (!Force)
+            {
+                int old_width = AppWindow.Size.Width;
+                int old_height = AppWindow.Size.Height;
+                await Task.Delay(100);
 
-            if (old_height != AppWindow.Size.Height || old_width != AppWindow.Size.Width) 
-                return;
+                if (old_height != AppWindow.Size.Height || old_width != AppWindow.Size.Width)
+                    return;
+            }
 
             int windowState = 0;
             if (AppWindow.Presenter is OverlappedPresenter presenter)
@@ -499,7 +507,7 @@ namespace UniGetUI.Interface
             Settings.SetValue("WindowGeometry", geometry);
         }
 
-        private void RestoreSize()
+        private void RestoreGeometry()
         {
 
             string geometry = Settings.GetValue("WindowGeometry");
@@ -524,8 +532,13 @@ namespace UniGetUI.Interface
                 Logger.Error(ex);
                 return;
             }
-
-            if (IsRectangleFullyVisible(X, Y, Width, Height))
+            
+            if(State == 1)
+            {
+                if (AppWindow.Presenter is OverlappedPresenter presenter) presenter.Maximize();
+                else Logger.Warn("MainWindow.AppWindow.Presenter is not OverlappedPresenter presenter!");
+            }
+            else if (IsRectangleFullyVisible(X, Y, Width, Height))
             {
                 AppWindow.Resize(new Windows.Graphics.SizeInt32(Width, Height));
                 AppWindow.Move(new Windows.Graphics.PointInt32(X, Y));
@@ -535,11 +548,7 @@ namespace UniGetUI.Interface
                 Logger.Warn("Restored geometry was outside of desktop bounds");
             }
             
-            if(State == 1)
-            {
-                if (AppWindow.Presenter is OverlappedPresenter presenter) presenter.Maximize();
-                else Logger.Warn("MainWindow.AppWindow.Presenter is not OverlappedPresenter presenter!");
-            }
+            
         }
         private bool IsRectangleFullyVisible(int x, int y, int width, int height)
         {

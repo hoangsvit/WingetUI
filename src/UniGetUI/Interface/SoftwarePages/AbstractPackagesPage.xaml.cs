@@ -8,6 +8,7 @@ using UniGetUI.Core.Logging;
 using UniGetUI.Core.SettingsEngine;
 using UniGetUI.Core.Tools;
 using UniGetUI.Interface.Enums;
+using UniGetUI.Interface.Pages;
 using UniGetUI.Interface.Widgets;
 using UniGetUI.PackageEngine.Classes.Manager.ManagerHelpers;
 using UniGetUI.PackageEngine.Enums;
@@ -22,7 +23,7 @@ using Windows.UI.Core;
 namespace UniGetUI.Interface
 {
 
-    public abstract partial class AbstractPackagesPage : Page
+    public abstract partial class AbstractPackagesPage : Page, IPageWithKeyboardShortcuts
     {
         protected bool DISABLE_AUTOMATIC_PACKAGE_LOAD_ON_START = false;
         protected bool MEGA_QUERY_BOX_ENABLED = false;
@@ -233,39 +234,24 @@ namespace UniGetUI.Interface
 
             PackageList.KeyUp += (s, e) =>
             {
+                bool IS_CONTROL_PRESSED = InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
+                bool IS_SHIFT_PRESSED = InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down);
+                bool IS_ALT_PRESSED = InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Menu).HasFlag(CoreVirtualKeyStates.Down);
+
                 if (e.Key == Windows.System.VirtualKey.Enter && PackageList.SelectedItem != null)
                 {
-                    if (InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Menu).HasFlag(CoreVirtualKeyStates.Down))
+                    if (IS_ALT_PRESSED)
                         ShowInstallationOptionsForPackage(PackageList.SelectedItem as Package);
-                    else if (InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down))
+                    else if (IS_CONTROL_PRESSED)
                         PerformMainPackageAction(PackageList.SelectedItem as Package);
                     else
                         ShowDetailsForPackage(PackageList.SelectedItem as Package);
-                }
-                else if (e.Key == Windows.System.VirtualKey.A && InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down))
-                {
-                    if (AllSelected)
-                        ClearItemSelection();
-                    else
-                        SelectAllItems();
-                }
-                else if (e.Key == Windows.System.VirtualKey.Space && PackageList.SelectedItem != null)
+                }                
+                else if (e.Key == Windows.System.VirtualKey.Space)
                 {
                     Package? package = PackageList.SelectedItem as Package;
                     if(package != null)
                         package.IsChecked = !package.IsChecked;
-                }
-                else if (e.Key == Windows.System.VirtualKey.F5)
-                {
-                    _ = LoadPackages(ReloadReason.Manual);
-                }
-                else if (e.Key == Windows.System.VirtualKey.F1)
-                {
-                    MainApp.Instance.MainWindow.NavigationPage.ShowHelp();
-                }
-                else if (e.Key == Windows.System.VirtualKey.F && InputKeyboardSource.GetKeyStateForCurrentThread(Windows.System.VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down))
-                {
-                    QueryBlock.Focus(FocusState.Programmatic);
                 }
             };
 
@@ -287,6 +273,24 @@ namespace UniGetUI.Interface
 
             QueryBlock.PlaceholderText = CoreTools.Translate("Search for packages");
             MegaQueryBlock.PlaceholderText = CoreTools.Translate("Search for packages");
+        }
+
+        public void SearchTriggered()
+        {
+            QueryBlock.Focus(FocusState.Pointer);
+        }
+
+        public void ReloadTriggered()
+        {
+            _ = LoadPackages(ReloadReason.Manual);
+        }
+
+        public void SelectAllTriggered()
+        {
+            if (AllSelected)
+                ClearItemSelection();
+            else
+                SelectAllItems();
         }
 
         protected void AddPackageToSourcesList(Package package)
@@ -369,7 +373,7 @@ namespace UniGetUI.Interface
          * 
          */
 
-        public async Task LoadPackages()
+        public virtual async Task LoadPackages()
         {
             await LoadPackages(ReloadReason.External);
         }
@@ -396,12 +400,12 @@ namespace UniGetUI.Interface
             if (DISABLE_AUTOMATIC_PACKAGE_LOAD_ON_START && reason == ReloadReason.FirstRun)
                 return;
 
-            MainSubtitle.Text = CoreTools.Translate("Loading...");
-            BackgroundText.Text = CoreTools.AutoTranslated("Loading...");
+            MainSubtitle.Text = MainSubtitle_StillLoading;
+            BackgroundText.Text = MainSubtitle_StillLoading;
             BackgroundText.Visibility = Visibility.Visible;
             LoadingProgressBar.Visibility = Visibility.Visible;
             SourcesPlaceholderText.Visibility = Visibility.Visible;
-            SourcesPlaceholderText.Text = CoreTools.AutoTranslated("Loading...");
+            SourcesPlaceholderText.Text = MainSubtitle_StillLoading;
             SourcesTreeViewGrid.Visibility = Visibility.Collapsed;
 
             ClearPackageList();
@@ -527,14 +531,14 @@ namespace UniGetUI.Interface
             }
             FilteredPackages.BlockSorting = false;
             FilteredPackages.Sort();
-            UpdatePackageCount(StillLoading);
+            UpdatePackageCount();
         }
 
-        public void UpdatePackageCount(bool StillLoading = false)
+        public void UpdatePackageCount()
         {
             if (FilteredPackages.Count() == 0)
             {
-                if (!StillLoading)
+                if(LoadingProgressBar.Visibility == Visibility.Collapsed)
                 {
                     if (Packages.Count() == 0)
                     {
@@ -552,8 +556,10 @@ namespace UniGetUI.Interface
                 }
                 else
                 {
+                    BackgroundText.Visibility = PackageList.Items.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
                     BackgroundText.Text = MainSubtitle_StillLoading;
-                    BackgroundText.Visibility = Packages.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+                    SourcesPlaceholderText.Visibility = Packages.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+                    SourcesPlaceholderText.Text = MainSubtitle_StillLoading;
                     MainSubtitle.Text = MainSubtitle_StillLoading;
                 }
 
@@ -684,7 +690,7 @@ namespace UniGetUI.Interface
         public void RemoveCorrespondingPackages(Package foreignPackage)
         {
             foreach (Package package in Packages.ToArray())
-                if (package == foreignPackage || package.Equals(foreignPackage))
+                if (package == foreignPackage || package.IsEquivalentTo(foreignPackage))
                 {
                     package.Tag = PackageTag.Default;
                     Packages.Remove(package);

@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.RegularExpressions;
 using System.Web;
+using UniGetUI.Core.Data;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Classes.Manager.ManagerHelpers;
@@ -42,31 +43,29 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
 
         protected sealed override async Task<Package[]> FindPackages_UnSafe(string query)
         {
-            Logger.Error($"Using new NuGet search engine for manager {Name}");
             List<Package> Packages = new();
+
+            var logger = TaskLogger.CreateNew(Enums.LoggableTaskType.FindPackages);
 
             ManagerSource[] sources;
             if (Capabilities.SupportsCustomSources)
                 sources = await GetSources();
             else
-                sources = new ManagerSource[] { Properties.DefaultSource };
+                sources = [ Properties.DefaultSource ];
             
             foreach(ManagerSource source in sources)
             {
                 Uri SearchUrl = new($"{source.Url}/Search()?searchTerm=%27{HttpUtility.UrlEncode(query)}%27&targetFramework=%27%27&includePrerelease=false");
-                Logger.Debug($"Begin package search with url={SearchUrl} on manager {Name}"); ;
-                HttpClientHandler handler = new()
-                {
-                    AutomaticDecompression = DecompressionMethods.All
-                };
+                logger.Log($"Begin package search with url={SearchUrl} on manager {Name}"); ;
 
-                using (HttpClient client = new(handler))
+                using (HttpClient client = new(CoreData.GenericHttpClientParameters))
                 {
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(CoreData.UserAgentString);
                     HttpResponseMessage response = await client.GetAsync(SearchUrl);
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        Logger.Warn($"Failed to fetch api at Url={SearchUrl} with status code {response.StatusCode}");
+                        logger.Error($"Failed to fetch api at Url={SearchUrl} with status code {response.StatusCode}");
                         continue;
                     }
 
@@ -89,11 +88,16 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
 
                         AlreadyProcessedPackages[id] = new SearchResult { id = id, version = version, version_float = float_version };
                     }
-                    foreach(SearchResult package in AlreadyProcessedPackages.Values)
+                    foreach (SearchResult package in AlreadyProcessedPackages.Values)
+                    {
+                        logger.Log($"Found package {package.id} version {package.version} on source {source.Name}");
                         Packages.Add(new Package(CoreTools.FormatAsName(package.id), package.id, package.version, source, this));
+                    }
 
                 }
             }
+
+            logger.Close(0);
 
             return Packages.ToArray();
         }

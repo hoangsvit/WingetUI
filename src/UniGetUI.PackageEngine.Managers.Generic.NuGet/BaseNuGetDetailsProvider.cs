@@ -1,5 +1,7 @@
 ﻿using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks.Dataflow;
+using UniGetUI.Core.Data;
 using UniGetUI.Core.IconEngine;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.Tools;
@@ -7,28 +9,31 @@ using UniGetUI.PackageEngine.Classes.Manager.BaseProviders;
 using UniGetUI.PackageEngine.ManagerClasses.Manager;
 using UniGetUI.PackageEngine.Managers.Generic.NuGet.Internal;
 using UniGetUI.PackageEngine.PackageClasses;
+using UniGetUI.PackageEngine.Enums;
 
 namespace UniGetUI.PackageEngine.Managers.PowerShellManager
 {
-    internal class BaseNuGetDetailsProvider : BasePackageDetailsProvider<PackageManager>
+    public class BaseNuGetDetailsProvider : BasePackageDetailsProvider<PackageManager>
     {
         public BaseNuGetDetailsProvider(BaseNuGet manager) : base(manager) { }
 
-        protected override async Task<PackageDetails> GetPackageDetails_Unsafe(Package package)
-        {
-            PackageDetails details = new(package);
+        protected override async Task GetPackageDetails_Unsafe(PackageDetails details)
+        { 
+            var logger = Manager.TaskLogger.CreateNew(LoggableTaskType.LoadPackageDetails);
             try
             {
-                details.ManifestUrl = PackageManifestLoader.GetPackageManifestUrl(package);
-                string? PackageManifestContents = await PackageManifestLoader.GetPackageManifestContent(package);
+                details.ManifestUrl = PackageManifestLoader.GetPackageManifestUrl(details.Package);
+                string? PackageManifestContents = await PackageManifestLoader.GetPackageManifestContent(details.Package);
+                logger.Log(PackageManifestContents);
+
                 if (PackageManifestContents == null)
                 {
-                    Logger.Warn($"No manifest content could be loaded for package {package.Id} on manager {package.Manager.Name}, returning empty PackageDetails");
-                    return details;
+                    logger.Error($"No manifest content could be loaded for package {details.Package.Id} on manager {details.Package.Manager.Name}, returning empty PackageDetails");
+                    logger.Close(1);
+                    return;
                 }
 
-                // details.InstallerUrl = new Uri($"https://globalcdn.nuget.org/packages/{package.Id}.{package.Version}.nupkg");
-                details.InstallerUrl = PackageManifestLoader.GetPackageNuGetPackageUrl(package);
+                details.InstallerUrl = PackageManifestLoader.GetPackageNuGetPackageUrl(details.Package);
                 details.InstallerType = CoreTools.Translate("NuPkg (zipped manifest)");
                 details.InstallerSize = await CoreTools.GetFileSizeAsync(details.InstallerUrl);
 
@@ -81,12 +86,14 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
                     break;
                 }
 
-                return details;
+                logger.Close(0);
+                return;
             }
             catch (Exception e)
             {
-                Logger.Error(e);
-                return details;
+                logger.Error(e);
+                logger.Close(1);
+                return;
             }
         }
 
@@ -119,39 +126,35 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
         protected override async Task<string[]> GetPackageVersions_Unsafe(Package package)
         {
             Uri SearchUrl = new($"{package.Source.Url}/FindPackagesById()?id='{package.Id}'");
-            Logger.Debug($"Begin package version search with url={SearchUrl} on manager {Manager.Name}"); ;
-            HttpClientHandler handler = new()
+            Logger.Debug($"Begin package version search with url={SearchUrl} on manager {Manager.Name}");
+
+            List<string> results = new();
+
+            HttpClient client = new(CoreData.GenericHttpClientParameters);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(CoreData.UserAgentString);
+
+            HttpResponseMessage response = await client.GetAsync(SearchUrl);
+            if (!response.IsSuccessStatusCode)
             {
-                AutomaticDecompression = DecompressionMethods.All
-            };
-
-            using (HttpClient client = new(handler))
-            {
-                HttpResponseMessage response = await client.GetAsync(SearchUrl);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Logger.Warn($"Failed to fetch api at Url={SearchUrl} with status code {response.StatusCode} to load versions");
-                    return [];
-                }
-
-                string SearchResults = await response.Content.ReadAsStringAsync();
-                MatchCollection matches = Regex.Matches(SearchResults, "Version='([^<>']+)'");
-
-                List<string> results = new();
-                HashSet<string> alreadyProcessed = new();
-
-                foreach (Match match in matches)
-                    if(!alreadyProcessed.Contains(match.Groups[1].Value) && match.Success)
-                    {
-                        results.Add(match.Groups[1].Value);
-                        alreadyProcessed.Add(match.Groups[1].Value);
-                    }
-
-                results.Reverse();
-                return results.ToArray();
-
+                Logger.Warn($"Failed to fetch api at Url={SearchUrl} with status code {response.StatusCode} to load versions");
+                return [];
             }
+
+            string SearchResults = await response.Content.ReadAsStringAsync();
+            HashSet<string> alreadyProcessed = new();
+
+            MatchCollection matches = Regex.Matches(SearchResults, "Version='([^<>']+)'");
+            foreach (Match match in matches)
+            {
+                if (!alreadyProcessed.Contains(match.Groups[1].Value) && match.Success)
+                {
+                    results.Add(match.Groups[1].Value);
+                    alreadyProcessed.Add(match.Groups[1].Value);
+                }
+            }
+
+            results.Sort(StringComparer.OrdinalIgnoreCase);
+            return results.ToArray();
         }
     }
 }

@@ -15,7 +15,7 @@ namespace UniGetUI.Core.Language
             string LangName = Settings.GetValue("PreferredLanguage");
             if (LangName == "default" || LangName == "")
             {
-                LangName = System.Globalization.CultureInfo.CurrentCulture.ToString().Replace("-", "_");
+                LangName = System.Globalization.CultureInfo.CurrentUICulture.ToString().Replace("-", "_");
             }
             LoadLanguage((ForceLanguage != "")? ForceLanguage: LangName);
         }
@@ -94,7 +94,8 @@ namespace UniGetUI.Core.Language
             {
                 Uri NewFile = new("https://raw.githubusercontent.com/marticliment/WingetUI/main/src/UniGetUI.Core.LanguageEngine/Assets/Languages/lang_" + LangKey + ".json");
 
-                HttpClient client = new();
+                HttpClient client = new(CoreData.GenericHttpClientParameters);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(CoreData.UserAgentString);
                 string fileContents = await client.GetStringAsync(NewFile);
 
                 if (!Directory.Exists(CoreData.UniGetUICacheDirectory_Lang))

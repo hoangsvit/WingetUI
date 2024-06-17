@@ -26,9 +26,9 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
             return await WinGetHelper.Instance.GetPackageVersions_Unsafe((WinGet)Manager, package);
         }
 
-        protected override async Task<PackageDetails> GetPackageDetails_Unsafe(Package package)
+        protected override async Task GetPackageDetails_Unsafe(PackageDetails details)
         {
-            return await WinGetHelper.Instance.GetPackageDetails_UnSafe((WinGet)Manager, package);
+            await WinGetHelper.Instance.GetPackageDetails_UnSafe((WinGet)Manager, details);
         }
 
         protected override async Task<CacheableIcon?> GetPackageIcon_Unsafe(Package package)
@@ -37,9 +37,9 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
             if(package.Source.Name == "msstore")
                 return await GetMicrosoftStorePackageIcon(package);
 
-            Logger.Warn("Non-MSStore WinGet Native Icons have been forcefully disabled on code");
-            return null;
-            // return GetWinGetPackageIcon(package);
+            // Logger.Warn("Non-MSStore WinGet Native Icons have been forcefully disabled on code");
+            // return null;
+            return await GetWinGetPackageIcon(package);
         }
 
         protected override async Task<Uri[]> GetPackageScreenshots_Unsafe(Package package)

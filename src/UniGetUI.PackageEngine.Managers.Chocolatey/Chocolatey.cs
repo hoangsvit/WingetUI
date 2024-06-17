@@ -7,6 +7,7 @@ using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Classes.Manager.ManagerHelpers;
 using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine.ManagerClasses.Manager;
+using UniGetUI.PackageEngine.Managers.Chocolatey;
 using UniGetUI.PackageEngine.Managers.PowerShellManager;
 using UniGetUI.PackageEngine.PackageClasses;
 
@@ -55,7 +56,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             };
 
             SourceProvider = new ChocolateySourceProvider(this);
-            
+            PackageDetailsProvider = new ChocolateyDetailsProvider(this);
         }
         
         protected override async Task<Package[]> GetAvailableUpdates_UnSafe()
@@ -73,13 +74,14 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 StandardOutputEncoding = System.Text.Encoding.UTF8
             };
 
+            var logger = TaskLogger.CreateNew(LoggableTaskType.ListUpdates, p);
             p.Start();
+
             string? line;
-            string output = "";
             List<Package> Packages = new();
             while ((line = await p.StandardOutput.ReadLineAsync()) != null)
             {
-                output += line + "\n";
+                logger.AddToStdOut(line);
                 if (!line.StartsWith("Chocolatey"))
                 {
                     string[] elements = line.Split('|');
@@ -95,10 +97,9 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 }
             }
 
-            output += await p.StandardError.ReadToEndAsync();
-            LogOperation(p, output);
-
+            logger.AddToStdErr(await p.StandardError.ReadToEndAsync());
             await p.WaitForExitAsync();
+            logger.Close(p.ExitCode);
 
             return Packages.ToArray();
         }
@@ -118,13 +119,14 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 StandardOutputEncoding = System.Text.Encoding.UTF8
             };
 
+            var logger = TaskLogger.CreateNew(LoggableTaskType.ListPackages, p);
             p.Start();
+
             string? line;
-            string output = "";
             List<Package> Packages = new();
             while ((line = await p.StandardOutput.ReadLineAsync()) != null)
             {
-                output += line + "\n";
+                logger.AddToStdOut(line);
                 if (!line.StartsWith("Chocolatey"))
                 {
                     string[] elements = line.Split(' ');
@@ -140,10 +142,9 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 }
             }
 
-            output += await p.StandardError.ReadToEndAsync();
-            LogOperation(p, output);
-
+            logger.AddToStdErr(await p.StandardError.ReadToEndAsync());
             await p.WaitForExitAsync();
+            logger.Close(p.ExitCode);
 
             return Packages.ToArray();
         }
