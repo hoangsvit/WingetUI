@@ -1,4 +1,7 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text.Json.Nodes;
+using Jeffijoe.MessageFormat;
 using UniGetUI.Core.Data;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.SettingsEngine;
@@ -10,12 +13,17 @@ namespace UniGetUI.Core.Language
     {
         private Dictionary<string, string> MainLangDict = new();
 
+        [NotNull]
+        public string? Locale { get; private set; }
+
+        private MessageFormatter? Formatter;
+
         public LanguageEngine(string ForceLanguage = "")
         {
             string LangName = Settings.GetValue("PreferredLanguage");
             if (LangName == "default" || LangName == "")
             {
-                LangName = System.Globalization.CultureInfo.CurrentUICulture.ToString().Replace("-", "_");
+                LangName = CultureInfo.CurrentUICulture.ToString().Replace("-", "_");
             }
             LoadLanguage((ForceLanguage != "")? ForceLanguage: LangName);
         }
@@ -26,23 +34,16 @@ namespace UniGetUI.Core.Language
         /// <param name="lang">the language code</param>
         public void LoadLanguage(string lang)
         {
-            if (LanguageData.LanguageReference.ContainsKey(lang))
-            {
-                MainLangDict = LoadLanguageFile(lang);
-                MainLangDict.TryAdd("locale", lang);
-            }
-            else if (LanguageData.LanguageReference.ContainsKey(lang[0..2]))
-            {
-                MainLangDict = LoadLanguageFile(lang[0..2]);
-                MainLangDict.TryAdd("locale", lang[0..2]);
-            }
-            else
-            {
-                MainLangDict = LoadLanguageFile("en");
-                MainLangDict.TryAdd("locale", "en");
-            }
+            Locale = LanguageData.LanguageReference.ContainsKey(lang)
+                ? lang
+                : LanguageData.LanguageReference.ContainsKey(lang[0..2])
+                    ? lang[0..2]
+                    : "en";
+            MainLangDict = LoadLanguageFile(lang);
+            Formatter = new() { Locale = Locale.Replace('_', '-') };
+
             LoadStaticTranslation();
-            Logger.Info("Loaded language locale: " + MainLangDict["locale"]);
+            Logger.Info("Loaded language locale: " + Locale);
         }
 
         public Dictionary<string, string> LoadLanguageFile(string LangKey, bool ForceBundled = false)
@@ -143,6 +144,11 @@ namespace UniGetUI.Core.Language
                 return MainLangDict[key].Replace("WingetUI", "UniGetUI");
             else
                 return key.Replace("WingetUI", "UniGetUI");
+        }
+
+        public string Translate(string key, Dictionary<string, object?> dict)
+        {
+            return Formatter!.FormatMessage(Translate(key), dict);
         }
     }
 }
