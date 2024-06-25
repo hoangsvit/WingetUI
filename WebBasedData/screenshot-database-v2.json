@@ -100,7 +100,7 @@
         "1password": {
             "icon": "https://upload.wikimedia.org/wikipedia/commons/5/5b/1Password_icon.png",
             "images": [
-                "w",
+                "https://developer.1password.com/img/meta-og-image.png",
                 "https://1password.com/img/tour/storage.6b7de1841abbfabf58300e55c8832b8b.png",
                 "https://1password.com/img/tour/security.a8d93c2a861e79fe51636df1ecf5fa9d.png",
                 "https://1password.com/img/tour/watchtower.5279b033f16276640b046442f41e8c9a.png"
