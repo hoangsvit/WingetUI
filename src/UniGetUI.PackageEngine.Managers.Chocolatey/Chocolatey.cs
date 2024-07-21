@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using UniGetUI.Core.Data;
 using UniGetUI.Core.Logging;
@@ -15,9 +15,9 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
 {
     public class Chocolatey : BaseNuGet
     {
-        new public static string[] FALSE_PACKAGE_NAMES = [""];
-        new public static string[] FALSE_PACKAGE_IDS = ["Directory", "", "Did", "Features?", "Validation", "-", "being", "It", "Error", "L'accs", "Maximum", "This", "Output is package name ", "operable", "Invalid"];
-        new public static string[] FALSE_PACKAGE_VERSIONS = ["", "Did", "Features?", "Validation", "-", "being", "It", "Error", "L'accs", "Maximum", "This", "packages", "current version", "installed version", "is", "program", "validations", "argument", "no"];
+        public static new string[] FALSE_PACKAGE_NAMES = [""];
+        public static new string[] FALSE_PACKAGE_IDS = ["Directory", "", "Did", "Features?", "Validation", "-", "being", "It", "Error", "L'accs", "Maximum", "This", "Output is package name ", "operable", "Invalid"];
+        public static new string[] FALSE_PACKAGE_VERSIONS = ["", "Did", "Features?", "Validation", "-", "being", "It", "Error", "L'accs", "Maximum", "This", "packages", "current version", "installed version", "is", "program", "validations", "argument", "no"];
 
         public Chocolatey() : base()
         {
@@ -28,7 +28,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 CanRunInteractively = true,
                 SupportsCustomVersions = true,
                 SupportsCustomArchitectures = true,
-                SupportedCustomArchitectures = new Architecture[] { Architecture.X86 },
+                SupportedCustomArchitectures = [Architecture.X86],
                 SupportsPreRelease = true,
                 SupportsCustomSources = true,
                 SupportsCustomPackageIcons = true,
@@ -174,15 +174,18 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             {
                 return OperationVeredict.Succeeded;
             }
-            else if (ReturnCode == 3010)
+
+            if (ReturnCode == 3010)
             {
                 return OperationVeredict.Succeeded; // TODO: Restart required
             }
-            else if ((output_string.Contains("Run as administrator") || output_string.Contains("The requested operation requires elevation") || output_string.Contains("ERROR: Exception calling \"CreateDirectory\" with \"1\" argument(s): \"Access to the path")) && !options.RunAsAdministrator)
+
+            if ((output_string.Contains("Run as administrator") || output_string.Contains("The requested operation requires elevation") || output_string.Contains("ERROR: Exception calling \"CreateDirectory\" with \"1\" argument(s): \"Access to the path")) && !options.RunAsAdministrator)
             {
                 options.RunAsAdministrator = true;
                 return OperationVeredict.AutoRetry;
             }
+
             return OperationVeredict.Failed;
         }
 
@@ -199,15 +202,18 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             {
                 return OperationVeredict.Succeeded;
             }
-            else if (ReturnCode == 3010)
+
+            if (ReturnCode == 3010)
             {
                 return OperationVeredict.Succeeded; // TODO: Restart required
             }
-            else if ((output_string.Contains("Run as administrator") || output_string.Contains("The requested operation requires elevation")) && !options.RunAsAdministrator)
+
+            if ((output_string.Contains("Run as administrator") || output_string.Contains("The requested operation requires elevation")) && !options.RunAsAdministrator)
             {
                 options.RunAsAdministrator = true;
                 return OperationVeredict.AutoRetry;
             }
+
             return OperationVeredict.Failed;
         }
         public override string[] GetInstallParameters(Package package, InstallationOptions options)
@@ -269,13 +275,27 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             string old_choco_path = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs\\WingetUI\\choco-cli");
             string new_choco_path = Path.Join(CoreData.UniGetUIDataDirectory, "Chocolatey");
 
-            if (Directory.Exists(old_choco_path))
+            if (!Directory.Exists(old_choco_path))
+            {
+                Logger.Debug("Old chocolatey path does not exist, not migrating Chocolatey");
+            }
+            else if (CoreTools.IsSymbolicLinkDir(old_choco_path))
+            {
+                Logger.ImportantInfo("Old chocolatey path is a symbolic link, not migrating Chocolatey...");
+            }
+            else if (Settings.Get("ChocolateySymbolicLinkCreated"))
+            {
+                Logger.Warn("The Choco path symbolic link has already been set to created!");
+            }
+            else
             {
                 try
                 {
                     Logger.Info("Moving Bundled Chocolatey from old path to new path...");
 
-                    if(Path.GetRelativePath(Environment.GetEnvironmentVariable("chocolateyinstall", EnvironmentVariableTarget.User) ?? "", old_choco_path) == ".")
+                    string current_env_var =
+                        Environment.GetEnvironmentVariable("chocolateyinstall", EnvironmentVariableTarget.User) ?? "";
+                    if (current_env_var != "" && Path.GetRelativePath(current_env_var, old_choco_path) == ".")
                     {
                         Logger.ImportantInfo("Migrating ChocolateyInstall environment variable to new location");
                         Environment.SetEnvironmentVariable("chocolateyinstall", new_choco_path, EnvironmentVariableTarget.User);
@@ -330,6 +350,9 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                         Directory.Delete(old_choco_path);
                     }
 
+                    await CoreTools.CreateSymbolicLinkDir(old_choco_path, new_choco_path);
+                    Settings.Set("ChocolateySymbolicLinkCreated", true);
+                    Logger.Info($"Symbolic link created successfully from {old_choco_path} to {new_choco_path}.");
 
                 }
                 catch (Exception e)

@@ -1,4 +1,4 @@
-﻿using UniGetUI.Core.Tools;
+using UniGetUI.Core.Tools;
 using UniGetUI.Interface.Enums;
 using UniGetUI.PackageEngine.ManagerClasses.Manager;
 using UniGetUI.PackageEngine.PackageClasses;
@@ -25,10 +25,8 @@ namespace UniGetUI.PackageEngine.PackageLoader
             {
                 return;
             }
-            else
-            {
-                await base.ReloadPackages();
-            }
+
+            await base.ReloadPackages();
         }
 
 #pragma warning disable
@@ -46,19 +44,21 @@ namespace UniGetUI.PackageEngine.PackageLoader
             {
                 return new Task<Package[]>(() => { return []; });
             }
-            else
-            {
-                return manager.FindPackages(text);
-            }
+
+            return manager.FindPackages(text);
         }
 
 #pragma warning disable
         protected override async Task WhenAddingPackage(Package package)
         {
             if (package.GetUpgradablePackage() != null)
+            {
                 package.SetTag(PackageTag.IsUpgradable);
+            }
             else if (package.GetInstalledPackage() != null)
+            {
                 package.SetTag(PackageTag.AlreadyInstalled);
+            }
         }
 #pragma warning restore
     }

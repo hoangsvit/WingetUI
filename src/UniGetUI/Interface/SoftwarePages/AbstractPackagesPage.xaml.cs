@@ -54,9 +54,9 @@ namespace UniGetUI.Interface
             External
         }
 
-        protected readonly bool DISABLE_AUTOMATIC_PACKAGE_LOAD_ON_START = false;
-        protected readonly bool MEGA_QUERY_BOX_ENABLED = false;
-        protected readonly bool SHOW_LAST_CHECKED_TIME = false;
+        protected readonly bool DISABLE_AUTOMATIC_PACKAGE_LOAD_ON_START;
+        protected readonly bool MEGA_QUERY_BOX_ENABLED;
+        protected readonly bool SHOW_LAST_CHECKED_TIME;
         public readonly string INSTANT_SEARCH_SETTING_NAME;
         public readonly string SIDEPANEL_WIDTH_SETTING_NAME;
         protected readonly string PAGE_NAME;
@@ -80,7 +80,6 @@ namespace UniGetUI.Interface
 
         public readonly int NewVersionLabelWidth;
         public readonly int NewVersionIconWidth;
-        private readonly bool AllSelected = true;
 
         protected abstract void WhenPackagesLoaded(ReloadReason reason);
         protected abstract void WhenPackageCountUpdated();
@@ -103,7 +102,7 @@ namespace UniGetUI.Interface
         }
         protected string NoMatches_SubtitleText
         {
-            get => FoundPackages_SubtitleText_Base(Loader.Packages.Count(), FilteredPackages.Count()) +
+            get => FoundPackages_SubtitleText_Base(Loader.Packages.Count, FilteredPackages.Count) +
                (SHOW_LAST_CHECKED_TIME ? " " + CoreTools.Translate("(Last checked: {0})", LastPackageLoadTime.ToString()) : "");
         }
         protected string FoundPackages_SubtitleText { get => NoMatches_SubtitleText; }
@@ -368,13 +367,18 @@ namespace UniGetUI.Interface
         }
         public void SelectAllTriggered()
         {
-            if (AllSelected)
+            if (QueryBlock.FocusState == FocusState.Unfocused)
             {
-                FilteredPackages.SelectAll();
-            }
-            else
-            {
-                FilteredPackages.ClearSelection();
+                if (!SelectAllCheckBox.IsChecked ?? false)
+                {
+                    SelectAllCheckBox.IsChecked = true;
+                    FilteredPackages.SelectAll();
+                }
+                else
+                {
+                    SelectAllCheckBox.IsChecked = false;
+                    FilteredPackages.ClearSelection();
+                }
             }
         }
         protected void AddPackageToSourcesList(Package package)
@@ -384,7 +388,7 @@ namespace UniGetUI.Interface
             {
                 UsedManagers.Add(source.Manager);
                 TreeViewNode Node;
-                Node = new TreeViewNode { Content = source.Manager.Name + "                                                                                    .", IsExpanded = false };
+                Node = new TreeViewNode { Content = source.Manager.DisplayName + "                                                                                    .", IsExpanded = false };
                 SourcesTreeView.RootNodes.Add(Node);
 
                 // Smart way to decide whether to check a source or not.
@@ -582,11 +586,11 @@ namespace UniGetUI.Interface
         /// </summary>
         public void UpdatePackageCount()
         {
-            if (FilteredPackages.Count() == 0)
+            if (FilteredPackages.Count == 0)
             {
                 if (LoadingProgressBar.Visibility == Visibility.Collapsed)
                 {
-                    if (Loader.Packages.Count() == 0)
+                    if (Loader.Packages.Count == 0)
                     {
                         BackgroundText.Text = NoPackages_BackgroundText;
                         SourcesPlaceholderText.Text = NoPackages_SourcesText;

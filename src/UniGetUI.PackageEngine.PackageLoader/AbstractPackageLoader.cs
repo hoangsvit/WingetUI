@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using UniGetUI.Core.Logging;
 using UniGetUI.PackageEngine.ManagerClasses.Manager;
 using UniGetUI.PackageEngine.PackageClasses;
@@ -38,9 +38,9 @@ namespace UniGetUI.PackageEngine.PackageLoader
         /// </summary>
         public event EventHandler<EventArgs>? StartedLoading;
 
-        readonly bool ALLOW_MULTIPLE_PACKAGE_VERSIONS = false;
-        protected string LOADER_IDENTIFIER;
-        private int LoadOperationIdentifier = 0;
+        protected readonly bool ALLOW_MULTIPLE_PACKAGE_VERSIONS;
+        protected readonly string LOADER_IDENTIFIER;
+        private int LoadOperationIdentifier;
         protected IEnumerable<PackageManager> Managers { get; private set; }
 
         public AbstractPackageLoader(IEnumerable<PackageManager> managers, string identifier, bool AllowMultiplePackageVersions = false)
@@ -51,12 +51,13 @@ namespace UniGetUI.PackageEngine.PackageLoader
             IsLoaded = false;
             IsLoading = false;
             LOADER_IDENTIFIER = identifier;
+            ALLOW_MULTIPLE_PACKAGE_VERSIONS = AllowMultiplePackageVersions;
         }
 
         /// <summary>
         /// Stops the current loading process
         /// </summary>
-        public void StopLoading(bool emitFinishSignal = true) 
+        public void StopLoading(bool emitFinishSignal = true)
         {
             LoadOperationIdentifier = -1;
             IsLoaded = false;
@@ -77,7 +78,7 @@ namespace UniGetUI.PackageEngine.PackageLoader
             LoadOperationIdentifier = new Random().Next();
             int current_identifier = LoadOperationIdentifier;
             IsLoading = true;
-            StartedLoading?.Invoke(this, new EventArgs());
+            StartedLoading?.Invoke(this, EventArgs.Empty);
 
             List<Task<Package[]>> tasks = [];
 
@@ -124,7 +125,7 @@ namespace UniGetUI.PackageEngine.PackageLoader
 
             if (LoadOperationIdentifier == current_identifier)
             {
-                FinishedLoading?.Invoke(this, new EventArgs());
+                FinishedLoading?.Invoke(this, EventArgs.Empty);
                 IsLoaded = true;
             }
             IsLoading = false;
@@ -140,7 +141,7 @@ namespace UniGetUI.PackageEngine.PackageLoader
             PackageReference.Clear();
             IsLoaded = false;
             IsLoading = false;
-            PackagesChanged?.Invoke(this, new EventArgs());
+            PackagesChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -213,7 +214,7 @@ namespace UniGetUI.PackageEngine.PackageLoader
             }
 
             AddPackage(package);
-            PackagesChanged?.Invoke(this, new EventArgs());
+            PackagesChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -234,7 +235,7 @@ namespace UniGetUI.PackageEngine.PackageLoader
 
             Packages.Remove(package);
             PackageReference.Remove(HashPackage(package));
-            PackagesChanged?.Invoke(this, new EventArgs());
+            PackagesChanged?.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>

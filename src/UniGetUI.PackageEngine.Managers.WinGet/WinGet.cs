@@ -11,14 +11,13 @@ using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine.ManagerClasses.Manager;
 using UniGetUI.PackageEngine.PackageClasses;
 
-
 namespace UniGetUI.PackageEngine.Managers.WingetManager
 {
     public class WinGet : PackageManager
     {
-        new public static string[] FALSE_PACKAGE_NAMES = ["", "e(s)", "have", "the", "Id"];
-        new public static string[] FALSE_PACKAGE_IDS = ["", "e(s)", "have", "an", "'winget", "pin'", "have", "an", "Version"];
-        new public static string[] FALSE_PACKAGE_VERSIONS = ["", "have", "an", "'winget", "pin'", "have", "an", "Version"];
+        public static new string[] FALSE_PACKAGE_NAMES = ["", "e(s)", "have", "the", "Id"];
+        public static new string[] FALSE_PACKAGE_IDS = ["", "e(s)", "have", "an", "'winget", "pin'", "have", "an", "Version"];
+        public static new string[] FALSE_PACKAGE_VERSIONS = ["", "have", "an", "'winget", "pin'", "have", "an", "Version"];
         public LocalWingetSource LocalPcSource { get; set; }
         public LocalWingetSource AndroidSubsystemSource { get; set; }
         public LocalWingetSource SteamSource { get; set; }
@@ -38,12 +37,13 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
             PowerShellInlineArgs = "-ExecutionPolicy Bypass -NoLogo -NoProfile -NonInteractive";
 
             WinGetBundledPath = Path.Join(CoreData.UniGetUIExecutableDirectory, "winget-cli_x64", "winget.exe");
-            
+
             Dependencies = [
                 new ManagerDependency(
                     "WinGet PowerShell Module",
                     PowerShellPath,
                     PowerShellPromptArgs + " -Command \"& {Install-Module -Name Microsoft.WinGet.Client -Force -Confirm:$false -Scope CurrentUser; if($error.count -ne 0){pause}}\"",
+                    "Install-Module -Name Microsoft.WinGet.Client -Scope CurrentUser",
                     async () =>
                     {
                         if (!Settings.Get("ForceUsePowerShellModules") || Settings.Get("ForceLegacyBundledWinGet"))
@@ -76,7 +76,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
                 CanRunInteractively = true,
                 SupportsCustomVersions = true,
                 SupportsCustomArchitectures = true,
-                SupportedCustomArchitectures = new Architecture[] { Architecture.X86, Architecture.X64, Architecture.Arm64 },
+                SupportedCustomArchitectures = [Architecture.X86, Architecture.X64, Architecture.Arm64],
                 SupportsCustomScopes = true,
                 SupportsCustomLocations = true,
                 SupportsCustomSources = true,
@@ -93,6 +93,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
             Properties = new ManagerProperties()
             {
                 Name = "Winget",
+                DisplayName = "WinGet",
                 Description = CoreTools.Translate("Microsoft's official package manager. Full of well-known and verified packages<br>Contains: <b>General Software, Microsoft Store apps</b>"),
                 IconId = "winget",
                 ColorIconId = "winget_color",
@@ -121,17 +122,17 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
         {
             return await Task.Run(() => WinGetHelper.Instance.FindPackages_UnSafe(this, query).GetAwaiter().GetResult());
         }
-        
+
         protected override async Task<Package[]> GetAvailableUpdates_UnSafe()
         {
             return await Task.Run(() => WinGetHelper.Instance.GetAvailableUpdates_UnSafe(this).GetAwaiter().GetResult());
         }
-        
+
         protected override async Task<Package[]> GetInstalledPackages_UnSafe()
         {
             return await Task.Run(() => WinGetHelper.Instance.GetInstalledPackages_UnSafe(this).GetAwaiter().GetResult());
         }
-        
+
         public ManagerSource GetLocalSource(string id)
         {
             try
@@ -153,19 +154,19 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
                 }
 
                 // Check if source is Steam
-                if ((id == "Steam" || id.Contains("Steam App ")) && id.Split("Steam App").Count() >= 2 && id.Split("Steam App")[1].Trim().Count(x => !"1234567890".Contains(x)) == 0)
+                if ((id == "Steam" || id.Contains("Steam App ")) && id.Split("Steam App").Length >= 2 && !id.Split("Steam App")[1].Trim().Any(x => !"1234567890".Contains(x)))
                 {
                     return SteamSource;
                 }
 
                 // Check if source is Ubisoft Connect
-                if (id == "Uplay" || (id.Contains("Uplay Install ") && id.Split("Uplay Install").Count() >= 2 && id.Split("Uplay Install")[1].Trim().Count(x => !"1234567890".Contains(x)) == 0))
+                if (id == "Uplay" || (id.Contains("Uplay Install ") && id.Split("Uplay Install").Length >= 2 && !id.Split("Uplay Install")[1].Trim().Any(x => !"1234567890".Contains(x))))
                 {
                     return UbisoftConnectSource;
                 }
 
                 // Check if source is GOG
-                if (id.EndsWith("_is1") && id.Split("_is1")[0].Count(x => !"1234567890".Contains(x)) == 0)
+                if (id.EndsWith("_is1") && !id.Split("_is1")[0].Any(x => !"1234567890".Contains(x)))
                 {
                     return GOGSource;
                 }
@@ -186,7 +187,6 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
                 return LocalPcSource;
             }
         }
-        
 
         public override string[] GetInstallParameters(Package package, InstallationOptions options)
         {
@@ -237,7 +237,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
 
         public override string[] GetUninstallParameters(Package package, InstallationOptions options)
         {
-            List<string> parameters = [Properties.UninstallVerb, "--id", package.Id, "--exact"];
+            List<string> parameters = [Properties.UninstallVerb, "--id", $"\"{package.Id}\"", "--exact"];
             if (!package.Source.IsVirtualManager)
             {
                 parameters.AddRange(["--source", package.Source.Name]);
@@ -253,15 +253,11 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
                 }
             );
 
-            if (options.Version != "")
+            if (!package.IsUpgradable && options.Version != "")
             {
                 parameters.AddRange(["--version", $"\"{options.Version}\"", "--force"]);
             }
-            else if (package.IsUpgradable && package.NewVersion != "")
-            {
-                parameters.AddRange(["--version", $"\"{package.NewVersion}\""]);
-            }
-            else if (package.Version != "Unknown")
+            else if (!package.IsUpgradable && package.Version != "Unknown")
             {
                 parameters.AddRange(["--version", $"\"{package.Version}\""]);
             }
@@ -288,7 +284,8 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
             {
                 return OperationVeredict.Succeeded; // TODO: Needs restart
             }
-            else if (ReturnCode == -1978335215)
+
+            if (ReturnCode == -1978335215)
             {
                 return OperationVeredict.Failed; // TODO: Needs skip checksum
             }
@@ -323,7 +320,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
             ManagerStatus status = new();
 
             bool FORCE_BUNDLED = Settings.Get("ForceLegacyBundledWinGet");
-            
+
             Tuple<bool, string> which_res = await CoreTools.Which("winget.exe");
             status.ExecutablePath = which_res.Item2;
             status.Found = which_res.Item1;
@@ -360,7 +357,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
                 }
             };
             process.Start();
-            status.Version = $"{(FORCE_BUNDLED? "Bundled" : "System")} WinGet CLI Version: {(await process.StandardOutput.ReadToEndAsync()).Trim()}";
+            status.Version = $"{(FORCE_BUNDLED ? "Bundled" : "System")} WinGet CLI Version: {(await process.StandardOutput.ReadToEndAsync()).Trim()}";
             string error = await process.StandardError.ReadToEndAsync();
             if (error != "")
             {
@@ -388,10 +385,14 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
             {
                 Logger.Error("WinGet STDERR not empty: " + error);
             }
-            
+
             try
             {
-                if (FORCE_BUNDLED) throw new Exception("Bundled WinGet was forced by the user!");
+                if (FORCE_BUNDLED)
+                {
+                    throw new InvalidOperationException("Bundled WinGet was forced by the user!");
+                }
+
                 await Task.Run(() => WinGetHelper.Instance = new NativeWinGetHelper());
                 status.Version += "\nUsing Native WinGet helper (COM Api)";
             }
@@ -446,15 +447,8 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
         {
             this.name = name;
             __icon_id = iconId;
-        }
-
-        public override string ToString()
-        {
-            return name;
+            AsString = Name;
+            AsString_DisplayName = Name;
         }
     }
 }
-
-
-
-

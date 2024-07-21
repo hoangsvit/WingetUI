@@ -42,10 +42,10 @@ namespace UniGetUI.Interface.Widgets
 
             if (!Manager.Capabilities.SupportsCustomSources)
             {
-                throw new Exception($"Attempted to create a SourceManager class from Manager {Manager.Name}, which does not support custom sources");
+                throw new InvalidOperationException($"Attempted to create a SourceManager class from Manager {Manager.Name}, which does not support custom sources");
             }
 
-            Header.Text = CoreTools.Translate("Manage {0} sources", Manager.Properties.Name);
+            Header.Text = CoreTools.Translate("Manage {0} sources", Manager.DisplayName);
             AddSourceButton.Content = CoreTools.Translate("Add source");
             AddSourceButton.Click += async (sender, e) =>
             {

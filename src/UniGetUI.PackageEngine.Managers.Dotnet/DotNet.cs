@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using UniGetUI.Core.Tools;
@@ -13,9 +13,9 @@ namespace UniGetUI.PackageEngine.Managers.DotNetManager
 {
     public class DotNet : BaseNuGet
     {
-        new public static string[] FALSE_PACKAGE_NAMES = [""];
-        new public static string[] FALSE_PACKAGE_IDS = [""];
-        new public static string[] FALSE_PACKAGE_VERSIONS = [""];
+        public static new string[] FALSE_PACKAGE_NAMES = [""];
+        public static new string[] FALSE_PACKAGE_IDS = [""];
+        public static new string[] FALSE_PACKAGE_VERSIONS = [""];
 
         public DotNet() : base()
         {
@@ -23,7 +23,8 @@ namespace UniGetUI.PackageEngine.Managers.DotNetManager
                 new ManagerDependency(
                     ".NET Tools Outdated",
                     Path.Join(Environment.SystemDirectory, "windowspowershell\\v1.0\\powershell.exe"),
-                    "-ExecutionPolicy Bypass -NoLogo -NoProfile -Command \"& {dotnet tool install --global dotnet-tools-outdated  --add-source https://api.nuget.org/v3/index.json; if($error.count -ne 0){pause}}\"",
+                    "-ExecutionPolicy Bypass -NoLogo -NoProfile -Command \"& {dotnet tool install --global dotnet-tools-outdated --add-source https://api.nuget.org/v3/index.json; if($error.count -ne 0){pause}}\"",
+                    "dotnet tool install --global dotnet-tools-outdated --add-source https://api.nuget.org/v3/index.json",
                     async () => (await CoreTools.Which("dotnet-tools-outdated.exe")).Item1)
             ];
 
@@ -32,7 +33,7 @@ namespace UniGetUI.PackageEngine.Managers.DotNetManager
                 CanRunAsAdmin = true,
                 SupportsCustomScopes = true,
                 SupportsCustomArchitectures = true,
-                SupportedCustomArchitectures = new Architecture[] { Architecture.X86, Architecture.X64, Architecture.Arm64, Architecture.Arm },
+                SupportedCustomArchitectures = [Architecture.X86, Architecture.X64, Architecture.Arm64, Architecture.Arm],
                 SupportsPreRelease = true,
                 SupportsCustomLocations = true,
                 SupportsCustomPackageIcons = true,
@@ -204,7 +205,6 @@ namespace UniGetUI.PackageEngine.Managers.DotNetManager
             }
             return Packages.ToArray();
         }
-
 
         public override OperationVeredict GetInstallOperationVeredict(Package package, InstallationOptions options, int ReturnCode, string[] Output)
         {

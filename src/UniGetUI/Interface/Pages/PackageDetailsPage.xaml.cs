@@ -30,10 +30,10 @@ namespace UniGetUI.Interface.Dialogs
         public Package Package;
         private readonly InstallOptionsPage InstallOptionsPage;
         public event EventHandler? Close;
-        readonly OperationType OperationRole;
-        bool PackageHasScreenshots = false;
+        private readonly OperationType OperationRole;
+        private bool PackageHasScreenshots;
         public ObservableCollection<TextBlock> ShowableTags = [];
-        readonly Uri InvalidUri = new("about:blank");
+        // private readonly Uri InvalidUri = new("about:blank");
 
         private enum LayoutMode
         {
@@ -90,7 +90,7 @@ namespace UniGetUI.Interface.Dialogs
             SetTextToItem(License_Content_Text, LoadingString);
             SetTextToItem(License_Content_Uri, "");
             SetTextToItem(Source_Label, CoreTools.Translate("Package Manager") + ": ");
-            SetTextToItem(Source_Content, Package.SourceAsString);
+            SetTextToItem(Source_Content, Package.Source.AsString_DisplayName);
 
             // Extended details section
             SetTextToItem(PackageId_Label, CoreTools.Translate("Package ID") + ": ");
@@ -146,15 +146,15 @@ namespace UniGetUI.Interface.Dialogs
             switch (OperationRole)
             {
                 case OperationType.Install:
-                    command = Package.Manager.Properties.ExecutableFriendlyName + " " + String.Join(' ', Package.Manager.GetInstallParameters(Package, await InstallationOptions.FromPackageAsync(Package)));
+                    command = Package.Manager.Properties.ExecutableFriendlyName + " " + string.Join(' ', Package.Manager.GetInstallParameters(Package, await InstallationOptions.FromPackageAsync(Package)));
                     break;
 
                 case OperationType.Uninstall:
-                    command = Package.Manager.Properties.ExecutableFriendlyName + " " + String.Join(' ', Package.Manager.GetUninstallParameters(Package, await InstallationOptions.FromPackageAsync(Package)));
+                    command = Package.Manager.Properties.ExecutableFriendlyName + " " + string.Join(' ', Package.Manager.GetUninstallParameters(Package, await InstallationOptions.FromPackageAsync(Package)));
                     break;
 
                 case OperationType.Update:
-                    command = Package.Manager.Properties.ExecutableFriendlyName + " " + String.Join(' ', Package.Manager.GetUpdateParameters(Package, await InstallationOptions.FromPackageAsync(Package)));
+                    command = Package.Manager.Properties.ExecutableFriendlyName + " " + string.Join(' ', Package.Manager.GetUpdateParameters(Package, await InstallationOptions.FromPackageAsync(Package)));
                     break;
             }
             CommandTextBlock.Text = command;
@@ -277,7 +277,7 @@ namespace UniGetUI.Interface.Dialogs
         public async void LoadScreenshots()
         {
             Uri[] screenshots = await Package.GetPackageScreenshots();
-            PackageHasScreenshots = screenshots.Count() > 0;
+            PackageHasScreenshots = screenshots.Length > 0;
             if (PackageHasScreenshots)
             {
                 PackageHasScreenshots = true;
@@ -296,7 +296,7 @@ namespace UniGetUI.Interface.Dialogs
 
         public async void ActionButton_Click(object sender, RoutedEventArgs e)
         {
-            Close?.Invoke(this, new EventArgs());
+            Close?.Invoke(this, EventArgs.Empty);
             InstallOptionsPage.SaveToDisk();
             switch (OperationRole)
             {
@@ -403,7 +403,7 @@ namespace UniGetUI.Interface.Dialogs
         }
         public void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            Close?.Invoke(this, new EventArgs());
+            Close?.Invoke(this, EventArgs.Empty);
         }
 
         public void PackageDetailsPage_SizeChanged(object? sender = null, SizeChangedEventArgs? e = null)

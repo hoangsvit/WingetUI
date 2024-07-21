@@ -1,4 +1,4 @@
-﻿using Jeffijoe.MessageFormat;
+using Jeffijoe.MessageFormat;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.Json.Nodes;
@@ -145,35 +145,30 @@ namespace UniGetUI.Core.Language
         {
             if (key == "WingetUI")
             {
-                if (MainLangDict.ContainsKey("formerly WingetUI") && MainLangDict["formerly WingetUI"] != "")
+                if (MainLangDict.TryGetValue("formerly WingetUI", out var formerly) && formerly != "")
                 {
-                    return "UniGetUI (" + MainLangDict["formerly WingetUI"] + ")";
+                    return "UniGetUI (" + formerly + ")";
                 }
 
                 return "UniGetUI (formerly WingetUI)";
             }
-            else if (key == "Formerly known as WingetUI")
-            {
-                if (MainLangDict.ContainsKey(key))
-                {
-                    return MainLangDict[key];
-                }
 
-                return key;
+            if (key == "Formerly known as WingetUI")
+            {
+                return MainLangDict.GetValueOrDefault(key, key);
             }
 
             if (key is null or "")
             {
                 return "";
             }
-            else if (MainLangDict.ContainsKey(key) && MainLangDict[key] != "")
+
+            if (MainLangDict.TryGetValue(key, out var value) && value != "")
             {
-                return MainLangDict[key].Replace("WingetUI", "UniGetUI");
+                return value.Replace("WingetUI", "UniGetUI");
             }
-            else
-            {
-                return key.Replace("WingetUI", "UniGetUI");
-            }
+
+            return key.Replace("WingetUI", "UniGetUI");
         }
 
         public string Translate(string key, Dictionary<string, object?> dict)

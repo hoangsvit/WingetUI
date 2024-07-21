@@ -1,23 +1,30 @@
 ﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
+using UniGetUI.Core.Logging;
 using UniGetUI.PackageEngine.Classes.Manager.ManagerHelpers;
 using UniGetUI.PackageEngine.Classes.Manager.Providers;
 using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine.ManagerClasses.Manager;
 
-namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
+namespace UniGetUI.PackageEngine.Managers.PowerShell7Manager
 {
-    internal sealed class ChocolateySourceProvider : BaseSourceProvider<PackageManager>
+    internal sealed class PowerShell7SourceProvider : BaseSourceProvider<PackageManager>
     {
-        public ChocolateySourceProvider(Chocolatey manager) : base(manager) { }
+        public PowerShell7SourceProvider(PowerShell7 manager) : base(manager) { }
 
         public override string[] GetAddSourceParameters(ManagerSource source)
         {
-            return ["source", "add", "--name", source.Name, "--source", source.Url.ToString(), "-y"];
+            if (source.Url.ToString() == "https://www.powershellgallery.com/api/v2")
+            {
+                return ["Register-PSRepository", "-Default"];
+            }
+
+            return ["Register-PSRepository", "-Name", source.Name, "-SourceLocation", source.Url.ToString()];
         }
 
         public override string[] GetRemoveSourceParameters(ManagerSource source)
         {
-            return ["source", "remove", "--name", source.Name, "-y"];
+            return ["Unregister-PSRepository", "-Name", source.Name];
         }
 
         public override OperationVeredict GetAddSourceOperationVeredict(ManagerSource source, int ReturnCode, string[] Output)
@@ -39,7 +46,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 StartInfo = new()
                 {
                     FileName = Manager.Status.ExecutablePath,
-                    Arguments = Manager.Properties.ExecutableCallArgs + " source list",
+                    Arguments = Manager.Properties.ExecutableCallArgs + " Get-PSRepository",
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     RedirectStandardInput = true,
@@ -50,8 +57,10 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             };
 
             ManagerClasses.Classes.ProcessTaskLogger logger = Manager.TaskLogger.CreateNew(LoggableTaskType.ListSources, p);
+
             p.Start();
 
+            bool dashesPassed = false;
             string? line;
             while ((line = await p.StandardOutput.ReadLineAsync()) != null)
             {
@@ -63,25 +72,27 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                         continue;
                     }
 
-                    if (line.Contains(" - ") && line.Contains(" | "))
+                    if (!dashesPassed)
                     {
-                        string[] parts = line.Trim().Split('|')[0].Trim().Split(" - ");
-                        if (parts[1].Trim() == "https://community.chocolatey.org/api/v2/")
+                        if (line.Contains("---"))
                         {
-                            sources.Add(new ManagerSource(Manager, "community", new Uri("https://community.chocolatey.org/api/v2/")));
+                            dashesPassed = true;
                         }
-                        else
+                    }
+                    else
+                    {
+                        string[] parts = Regex.Replace(line.Trim(), " {2,}", " ").Split(' ');
+                        if (parts.Length >= 3)
                         {
-                            sources.Add(new ManagerSource(Manager, parts[0].Trim(), new Uri(parts[1].Trim())));
+                            sources.Add(new ManagerSource(Manager, parts[0].Trim(), new Uri(parts[2].Trim())));
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    logger.AddToStdErr(e.ToString());
+                    Logger.Warn(e);
                 }
             }
-
             logger.AddToStdErr(await p.StandardError.ReadToEndAsync());
             await p.WaitForExitAsync();
             logger.Close(p.ExitCode);

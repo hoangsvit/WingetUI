@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using UniGetUI.Core.Logging;
@@ -15,11 +15,11 @@ namespace UniGetUI.PackageEngine.Managers.ScoopManager
 
     public class Scoop : PackageManager
     {
-        new public static string[] FALSE_PACKAGE_NAMES = [""];
-        new public static string[] FALSE_PACKAGE_IDS = ["No"];
-        new public static string[] FALSE_PACKAGE_VERSIONS = ["Matches"];
+        public static new string[] FALSE_PACKAGE_NAMES = [""];
+        public static new string[] FALSE_PACKAGE_IDS = ["No"];
+        public static new string[] FALSE_PACKAGE_VERSIONS = ["Matches"];
 
-        long LastScoopSourceUpdateTime = 0;
+        private long LastScoopSourceUpdateTime;
 
         public Scoop() : base()
         {
@@ -29,12 +29,14 @@ namespace UniGetUI.PackageEngine.Managers.ScoopManager
                     "Scoop-Search",
                     Path.Join(Environment.SystemDirectory, "windowspowershell\\v1.0\\powershell.exe"),
                     "-ExecutionPolicy Bypass -NoLogo -NoProfile -Command \"& {scoop install main/scoop-search; if($error.count -ne 0){pause}}\"",
+                    "scoop install main/scoop-search",
                     async () => (await CoreTools.Which("scoop-search.exe")).Item1),
                 // GIT is required for scoop updates to work
                 new ManagerDependency(
                     "Git",
                     Path.Join(Environment.SystemDirectory, "windowspowershell\\v1.0\\powershell.exe"),
                     "-ExecutionPolicy Bypass -NoLogo -NoProfile -Command \"& {scoop install main/git; if($error.count -ne 0){pause}}\"",
+                    "scoop install main/git",
                     async () => (await CoreTools.Which("git.exe")).Item1)
             ];
 
@@ -178,7 +180,6 @@ namespace UniGetUI.PackageEngine.Managers.ScoopManager
 
             List<Package> Packages = [];
 
-
             Process p = new()
             {
                 StartInfo = new ProcessStartInfo()
@@ -305,7 +306,6 @@ namespace UniGetUI.PackageEngine.Managers.ScoopManager
             logger.Close(p.ExitCode);
             return Packages.ToArray();
         }
-
 
         public override OperationVeredict GetUninstallOperationVeredict(Package package, InstallationOptions options, int ReturnCode, string[] Output)
         {
@@ -465,7 +465,6 @@ namespace UniGetUI.PackageEngine.Managers.ScoopManager
             status.Version = (await process.StandardOutput.ReadToEndAsync()).Trim();
             status.Found = (await CoreTools.Which("scoop")).Item1;
 
-
             Status = status; // Wee need this for the RunCleanup method to get the executable path
             if (status.Found && IsEnabled() && Settings.Get("EnableScoopCleanup"))
             {
@@ -478,7 +477,7 @@ namespace UniGetUI.PackageEngine.Managers.ScoopManager
         private async void RunCleanup()
         {
             Logger.Info("Starting scoop cleanup...");
-            foreach (string command in new []{" cache rm *", " cleanup --all --cache", " cleanup --all --global --cache"})
+            foreach (string command in new[] { " cache rm *", " cleanup --all --cache", " cleanup --all --global --cache" })
             {
                 Process p = new()
                 {
@@ -496,6 +495,7 @@ namespace UniGetUI.PackageEngine.Managers.ScoopManager
                 p.Start();
                 await p.WaitForExitAsync();
             }
+
             Logger.Info("Scoop cleanup finished!");
         }
     }

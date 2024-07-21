@@ -19,6 +19,7 @@ using UniGetUI.PackageEngine.Classes.Manager.Classes;
 using UniGetUI.PackageEngine.PackageClasses;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation.Collections;
+using Microsoft.UI.Xaml.Media;
 
 namespace UniGetUI.Interface
 {
@@ -26,17 +27,19 @@ namespace UniGetUI.Interface
     {
         /* BEGIN INTEROP STUFF */
         [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)] static extern bool SetForegroundWindow(IntPtr hWnd);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
 
         [ComImport]
         [Guid("3A3DCD6C-3EAB-43DC-BCDE-45671CE800C8")]
         [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        interface IDataTransferManagerInterop
+        private interface IDataTransferManagerInterop
         {
             IntPtr GetForWindow([In] IntPtr appWindow, [In] ref Guid riid);
             void ShowShareUIForWindow(IntPtr appWindow);
         }
-        static readonly Guid _dtm_iid = new(0xa5caee9b, 0x8708, 0x49d1, 0x8d, 0x36, 0x67, 0xd2, 0x5a, 0x8d, 0xa0, 0x0c);
+
+        private static readonly Guid _dtm_iid = new(0xa5caee9b, 0x8708, 0x49d1, 0x8d, 0x36, 0x67, 0xd2, 0x5a, 0x8d, 0xa0, 0x0c);
         public const int MONITORINFOF_PRIMARY = 0x00000001;
 
         [StructLayout(LayoutKind.Sequential)]
@@ -63,15 +66,15 @@ namespace UniGetUI.Interface
         public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
         /* END INTEROP STUFF */
 
-        TaskbarIcon? TrayIcon;
-        bool HasLoadedLastGeometry = false;
+        private TaskbarIcon? TrayIcon;
+        private bool HasLoadedLastGeometry;
 
         public MainView NavigationPage;
         public Grid ContentRoot;
-        public bool BlockLoading = false;
-        readonly ContentDialog LoadingSthDalog;
+        public bool BlockLoading;
+        private readonly ContentDialog LoadingSthDalog;
 
-        private int LoadingDialogCount = 0;
+        private int LoadingDialogCount;
 
         public List<ContentDialog> DialogQueue = [];
 
@@ -515,11 +518,11 @@ namespace UniGetUI.Interface
             int total = dependencies.Count();
             foreach (ManagerDependency dependency in dependencies)
             {
-                await ShowMissingDependencyQuery(dependency.Name, dependency.InstallFileName, dependency.InstallArguments, current++, total);
+                await ShowMissingDependencyQuery(dependency.Name, dependency.InstallFileName, dependency.InstallArguments,  dependency.FancyInstallCommand, current++, total);
             }
         }
 
-        public async Task ShowMissingDependencyQuery(string dep_name, string exe_name, string exe_args, int current, int total)
+        public async Task ShowMissingDependencyQuery(string dep_name, string exe_name, string exe_args, string fancy_command,  int current, int total)
         {
             ContentDialog dialog = new();
 
@@ -535,7 +538,7 @@ namespace UniGetUI.Interface
             bool NotFirstTime = Settings.Get(PREVIOUSLY_ATTEMPTED_PREF);
             Settings.Set(PREVIOUSLY_ATTEMPTED_PREF, true);
 
-            dialog.XamlRoot = this.MainContentGrid.XamlRoot;
+            dialog.XamlRoot = MainContentGrid.XamlRoot;
             dialog.Style = Application.Current.Resources["DefaultContentDialogStyle"] as Style;
             dialog.Title = CoreTools.Translate("Missing dependency") + (total > 1 ? $" ({current}/{total})" : "");
             dialog.SecondaryButtonText = CoreTools.Translate("Not right now");
@@ -564,6 +567,27 @@ namespace UniGetUI.Interface
             };
             p.Children.Add(infotext);
 
+            TextBlock commandInfo = new()
+            {
+                Text = CoreTools.Translate("Alternatively, you can also install {0} by running the following command in a Windows PowerShell prompt:", dep_name),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 4),
+                Opacity = .7F,
+            };
+            p.Children.Add(commandInfo);
+
+            TextBlock manualInstallCommand = new()
+            {
+                Text = fancy_command,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 4),
+                Opacity = .7F,
+                IsTextSelectionEnabled = true,
+                FontFamily = new FontFamily("Consolas"),
+            };
+            p.Children.Add(manualInstallCommand);
+
+
             CheckBox c = new();
             if (NotFirstTime)
             {
@@ -573,6 +597,7 @@ namespace UniGetUI.Interface
                 c.Unchecked += (s, e) => Settings.Set(DEP_SKIPPED_PREF, false);
                 p.Children.Add(c);
             }
+
 
             ProgressBar progress = new()
             {
@@ -744,7 +769,7 @@ namespace UniGetUI.Interface
 
 
         }
-        private bool IsRectangleFullyVisible(int x, int y, int width, int height)
+        private static bool IsRectangleFullyVisible(int x, int y, int width, int height)
         {
             List<MONITORINFO> monitorInfos = [];
 
@@ -797,10 +822,8 @@ namespace UniGetUI.Interface
             {
                 return false;
             }
-            else
-            {
-                return true;
-            }
+
+            return true;
         }
     }
 }

@@ -112,7 +112,7 @@ namespace UniGetUI.Interface.Dialogs
 
             if (Options.CustomParameters != null)
             {
-                CustomParameters.Text = String.Join(' ', Options.CustomParameters);
+                CustomParameters.Text = string.Join(' ', Options.CustomParameters);
             }
 
             LoadIgnoredUpdates();
@@ -202,7 +202,7 @@ namespace UniGetUI.Interface.Dialogs
         {
             ExternalLibraries.Pickers.FolderPicker openPicker = new(MainApp.Instance.MainWindow.GetWindowHandle());
             string folder = openPicker.Show();
-            if (folder != String.Empty)
+            if (folder != string.Empty)
             {
                 CustomInstallLocation.Text = folder;
             }
@@ -215,7 +215,7 @@ namespace UniGetUI.Interface.Dialogs
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
-            Close?.Invoke(this, new EventArgs());
+            Close?.Invoke(this, EventArgs.Empty);
         }
     }
 }

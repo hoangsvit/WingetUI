@@ -1,11 +1,11 @@
-﻿using UniGetUI.PackageEngine.ManagerClasses.Manager;
+using UniGetUI.PackageEngine.ManagerClasses.Manager;
 
 namespace UniGetUI.PackageEngine.Classes.Manager.ManagerHelpers
 {
     public class ManagerSource
     {
         public virtual string IconId { get { return Manager.Properties.IconId; } }
-        public readonly bool IsVirtualManager = false;
+        public readonly bool IsVirtualManager;
         public struct Capabilities
         {
             public bool KnowsUpdateDate { get; set; } = false;
@@ -20,6 +20,8 @@ namespace UniGetUI.PackageEngine.Classes.Manager.ManagerHelpers
         public Uri Url { get; private set; }
         public int? PackageCount { get; }
         public string UpdateDate { get; }
+        public string AsString { get; protected set; }
+        public string AsString_DisplayName { get; protected set; }
 
         public ManagerSource(PackageManager manager, string name, Uri url, int? packageCount = 0, string updateDate = "", bool isVirtualManager = false)
         {
@@ -33,18 +35,21 @@ namespace UniGetUI.PackageEngine.Classes.Manager.ManagerHelpers
             }
 
             UpdateDate = updateDate;
+
+            AsString = Manager.Capabilities.SupportsCustomSources ? $"{Manager.Name}: {Name}" : Name;
+            if (Manager.Capabilities.SupportsCustomScopes && Manager.Properties.DisplayName is not null)
+            {
+                AsString_DisplayName = $"{Manager.DisplayName}: {Name}";
+            }
+            else
+            {
+                AsString_DisplayName = AsString;
+            }
         }
 
         public override string ToString()
         {
-            if (Manager.Capabilities.SupportsCustomSources)
-            {
-                return Manager.Name + ": " + Name;
-            }
-            else
-            {
-                return Manager.Name;
-            }
+            throw new NotImplementedException("Use the `AsString` attribute instead");
         }
 
         /// <summary>
