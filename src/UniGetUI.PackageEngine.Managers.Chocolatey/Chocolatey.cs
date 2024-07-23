@@ -4,12 +4,16 @@ using UniGetUI.Core.Data;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.SettingsEngine;
 using UniGetUI.Core.Tools;
+using UniGetUI.PackageEngine.Classes.Manager;
+using UniGetUI.Interface.Enums;
 using UniGetUI.PackageEngine.Classes.Manager.ManagerHelpers;
 using UniGetUI.PackageEngine.Enums;
+using UniGetUI.PackageEngine.Interfaces;
 using UniGetUI.PackageEngine.ManagerClasses.Manager;
 using UniGetUI.PackageEngine.Managers.Chocolatey;
 using UniGetUI.PackageEngine.Managers.PowerShellManager;
 using UniGetUI.PackageEngine.PackageClasses;
+using UniGetUI.PackageEngine.ManagerClasses.Classes;
 
 namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
 {
@@ -32,7 +36,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 SupportsPreRelease = true,
                 SupportsCustomSources = true,
                 SupportsCustomPackageIcons = true,
-                Sources = new ManagerSource.Capabilities()
+                Sources = new SourceCapabilities()
                 {
                     KnowsPackageCount = false,
                     KnowsUpdateDate = false,
@@ -43,7 +47,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             {
                 Name = "Chocolatey",
                 Description = CoreTools.Translate("The classic package manager for windows. You'll find everything there. <br>Contains: <b>General Software</b>"),
-                IconId = "choco",
+                IconId = IconType.Chocolatey,
                 ColorIconId = "choco_color",
                 ExecutableFriendlyName = "choco.exe",
                 InstallVerb = "install",
@@ -58,7 +62,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             SourceProvider = new ChocolateySourceProvider(this);
             PackageDetailsProvider = new ChocolateyDetailsProvider(this);
         }
-
+        
         protected override async Task<Package[]> GetAvailableUpdates_UnSafe()
         {
             Process p = new()
@@ -76,7 +80,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 }
             };
 
-            ManagerClasses.Classes.ProcessTaskLogger logger = TaskLogger.CreateNew(LoggableTaskType.ListUpdates, p);
+            IProcessTaskLogger logger = TaskLogger.CreateNew(LoggableTaskType.ListUpdates, p);
             p.Start();
 
             string? line;
@@ -130,7 +134,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 }
             };
 
-            ManagerClasses.Classes.ProcessTaskLogger logger = TaskLogger.CreateNew(LoggableTaskType.ListInstalledPackages, p);
+            IProcessTaskLogger logger = TaskLogger.CreateNew(LoggableTaskType.ListInstalledPackages, p);
             p.Start();
 
             string? line;
@@ -166,7 +170,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
 
             return Packages.ToArray();
         }
-        public override OperationVeredict GetInstallOperationVeredict(Package package, InstallationOptions options, int ReturnCode, string[] Output)
+        public override OperationVeredict GetInstallOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
         {
             string output_string = string.Join("\n", Output);
 
@@ -189,12 +193,12 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             return OperationVeredict.Failed;
         }
 
-        public override OperationVeredict GetUpdateOperationVeredict(Package package, InstallationOptions options, int ReturnCode, string[] Output)
+        public override OperationVeredict GetUpdateOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
         {
             return GetInstallOperationVeredict(package, options, ReturnCode, Output);
         }
 
-        public override OperationVeredict GetUninstallOperationVeredict(Package package, InstallationOptions options, int ReturnCode, string[] Output)
+        public override OperationVeredict GetUninstallOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
         {
             string output_string = string.Join("\n", Output);
 
@@ -216,7 +220,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
 
             return OperationVeredict.Failed;
         }
-        public override string[] GetInstallParameters(Package package, InstallationOptions options)
+        public override string[] GetInstallParameters(IPackage package, IInstallationOptions options)
         {
             List<string> parameters = GetUninstallParameters(package, options).ToList();
             parameters[0] = Properties.InstallVerb;
@@ -244,14 +248,14 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
 
             return parameters.ToArray();
         }
-        public override string[] GetUpdateParameters(Package package, InstallationOptions options)
+        public override string[] GetUpdateParameters(IPackage package, IInstallationOptions options)
         {
             string[] parameters = GetInstallParameters(package, options);
             parameters[0] = Properties.UpdateVerb;
             return parameters;
         }
 
-        public override string[] GetUninstallParameters(Package package, InstallationOptions options)
+        public override string[] GetUninstallParameters(IPackage package, IInstallationOptions options)
         {
             List<string> parameters = [Properties.UninstallVerb, package.Id, "-y"];
 
