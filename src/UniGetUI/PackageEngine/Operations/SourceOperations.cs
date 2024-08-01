@@ -1,11 +1,10 @@
-﻿using CommunityToolkit.WinUI.Notifications;
+using CommunityToolkit.WinUI.Notifications;
 using Microsoft.UI.Xaml.Controls;
 using System.Diagnostics;
 using UniGetUI.Core.Data;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.SettingsEngine;
 using UniGetUI.Core.Tools;
-using UniGetUI.PackageEngine.Classes.Manager;
 using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine.Interfaces;
 
@@ -59,15 +58,15 @@ namespace UniGetUI.PackageEngine.Operations
             ];
         }
 
-        protected override OperationVeredict GetProcessVeredict(int ReturnCode, string[] Output)
+        protected override Task<OperationVeredict> GetProcessVeredict(int ReturnCode, string[] Output)
         {
-            return Source.Manager.GetAddSourceOperationVeredict(Source, ReturnCode, Output);
+            return Task.Run(() => Source.Manager.GetAddSourceOperationVeredict(Source, ReturnCode, Output));
         }
 
         protected override async Task<AfterFinshAction> HandleFailure()
         {
             LineInfoText = CoreTools.Translate("Could not add source {source} to {manager}", new Dictionary<string, object?> { { "source", Source.Name }, { "manager", Source.Manager.Name } });
-            if (!Settings.Get("DisableErrorNotifications") && !Settings.Get("DisableNotifications"))
+            if (!Settings.Get("DisableErrorNotifications") && !Settings.AreNotificationsDisabled())
             {
                 try
                 {
@@ -103,7 +102,7 @@ namespace UniGetUI.PackageEngine.Operations
         {
             OperationSucceeded?.Invoke(this, EventArgs.Empty);
             LineInfoText = CoreTools.Translate("The source {source} was added to {manager} successfully", new Dictionary<string, object?> { { "source", Source.Name }, { "manager", Source.Manager.Name } });
-            if (!Settings.Get("DisableSuccessNotifications") && !Settings.Get("DisableNotifications"))
+            if (!Settings.Get("DisableSuccessNotifications") && !Settings.AreNotificationsDisabled())
             {
                 try
                 {
@@ -170,15 +169,15 @@ namespace UniGetUI.PackageEngine.Operations
             ];
         }
 
-        protected override OperationVeredict GetProcessVeredict(int ReturnCode, string[] Output)
+        protected override Task<OperationVeredict> GetProcessVeredict(int ReturnCode, string[] Output)
         {
-            return Source.Manager.GetRemoveSourceOperationVeredict(Source, ReturnCode, Output);
+            return Task.Run(() => Source.Manager.GetRemoveSourceOperationVeredict(Source, ReturnCode, Output));
         }
 
         protected override async Task<AfterFinshAction> HandleFailure()
         {
             LineInfoText = CoreTools.Translate("Could not remove source {source} from {manager}", new Dictionary<string, object?> { { "source", Source.Name }, { "manager", Source.Manager.Name } });
-            if (!Settings.Get("DisableErrorNotifications") && !Settings.Get("DisableNotifications"))
+            if (!Settings.Get("DisableErrorNotifications") && !Settings.AreNotificationsDisabled())
             {
                 new ToastContentBuilder()
                     .AddArgument("action", "OpenUniGetUI")
@@ -205,7 +204,7 @@ namespace UniGetUI.PackageEngine.Operations
         {
             OperationSucceeded?.Invoke(this, EventArgs.Empty);
             LineInfoText = CoreTools.Translate("The source {source} was removed from {manager} successfully", new Dictionary<string, object?> { { "source", Source.Name }, { "manager", Source.Manager.Name } });
-            if (!Settings.Get("DisableSuccessNotifications") && !Settings.Get("DisableNotifications"))
+            if (!Settings.Get("DisableSuccessNotifications") && !Settings.AreNotificationsDisabled())
             {
                 try
                 {

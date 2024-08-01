@@ -1,7 +1,5 @@
-using UniGetUI.PackageEngine.ManagerClasses.Manager;
 using UniGetUI.PackageEngine.Interfaces;
 using UniGetUI.Interface.Enums;
-using UniGetUI.PackageEngine.PackageClasses;
 
 namespace UniGetUI.PackageEngine.Classes.Manager
 {
@@ -22,7 +20,7 @@ namespace UniGetUI.PackageEngine.Classes.Manager
         public ManagerSource(IPackageManager manager, string name, Uri url, int? packageCount = 0, string updateDate = "", bool isVirtualManager = false)
         {
             IsVirtualManager = isVirtualManager;
-            Manager = manager as IPackageManager;
+            Manager = manager;
             Name = name;
             Url = url;
             if (manager.Capabilities.Sources.KnowsPackageCount)
@@ -31,16 +29,9 @@ namespace UniGetUI.PackageEngine.Classes.Manager
             }
 
             UpdateDate = updateDate;
-
-            AsString = Manager.Capabilities.SupportsCustomSources ? $"{Manager.Name}: {Name}" : Name;
-            if (Manager.Capabilities.SupportsCustomScopes && Manager.Properties.DisplayName is not null)
-            {
-                AsString_DisplayName = $"{Manager.DisplayName}: {Name}";
-            }
-            else
-            {
-                AsString_DisplayName = AsString;
-            }
+            AsString = "";
+            AsString_DisplayName = "";
+            RefreshSourceNames();
         }
 
         public override string ToString()
@@ -51,10 +42,21 @@ namespace UniGetUI.PackageEngine.Classes.Manager
         /// <summary>
         /// Replaces the current URL with the new one. Must be used only when a placeholder URL is used.
         /// </summary>
-        /// <param name="newUrl"></param>
         public void ReplaceUrl(Uri newUrl)
         {
             Url = newUrl;
+        }
+
+        /// <summary>
+        /// Will refresh the source names based on the current manager's properties.
+        /// </summary>
+        public void RefreshSourceNames()
+        {
+            AsString = Manager.Capabilities.SupportsCustomSources ? $"{Manager.Properties.Name}: {Name}" : Manager.Properties.Name;
+            if (Manager.Properties.DisplayName is string display_name)
+                AsString_DisplayName = Manager.Capabilities.SupportsCustomSources ? $"{display_name}: {Name}" : display_name;
+            else
+                AsString_DisplayName = AsString;
         }
     }
 }

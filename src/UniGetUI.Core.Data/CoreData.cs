@@ -13,9 +13,9 @@ namespace UniGetUI.Core.Data
         {
             try
             {
-                Process p = new Process()
+                Process p = new Process
                 {
-                    StartInfo = new ProcessStartInfo()
+                    StartInfo = new ProcessStartInfo
                     {
                         FileName = "chcp.com",
                         RedirectStandardOutput = true,
@@ -34,8 +34,8 @@ namespace UniGetUI.Core.Data
             }
         }
 
-        public const string VersionName =  "3.1.1-beta3"; // Do not modify this line, use file scripts/apply_versions.py
-        public const double VersionNumber =  3.1093; // Do not modify this line, use file scripts/apply_versions.py
+        public const string VersionName =  "3.1.1"; // Do not modify this line, use file scripts/apply_versions.py
+        public const double VersionNumber =  3.11; // Do not modify this line, use file scripts/apply_versions.py
 
         public const string UserAgentString = $"UniGetUI/{VersionName} (https://marticliment.com/unigetui/; contact@marticliment.com)";
 
@@ -155,7 +155,6 @@ namespace UniGetUI.Core.Data
 
         public static string ManagerLogs = "";
 
-
         private static int __volatile_notification_id_counter = 1235;
 
         /// <summary>
@@ -213,7 +212,6 @@ namespace UniGetUI.Core.Data
         }
 
         public static string GSudoPath = "";
-
 
         /// <summary>
         /// This method will return the most appropriate data directory.

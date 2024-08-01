@@ -22,19 +22,19 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
         public static new string[] FALSE_PACKAGE_NAMES = ["", "e(s)", "have", "the", "Id"];
         public static new string[] FALSE_PACKAGE_IDS = ["", "e(s)", "have", "an", "'winget", "pin'", "have", "an", "Version"];
         public static new string[] FALSE_PACKAGE_VERSIONS = ["", "have", "an", "'winget", "pin'", "have", "an", "Version"];
-        public LocalWingetSource LocalPcSource { get; set; }
-        public LocalWingetSource AndroidSubsystemSource { get; set; }
-        public LocalWingetSource SteamSource { get; set; }
-        public LocalWingetSource UbisoftConnectSource { get; set; }
-        public LocalWingetSource GOGSource { get; set; }
-        public LocalWingetSource MicrosoftStoreSource { get; set; }
+        public LocalWinGetSource LocalPcSource { get; }
+        public LocalWinGetSource AndroidSubsystemSource { get; }
+        public LocalWinGetSource SteamSource { get; }
+        public LocalWinGetSource UbisoftConnectSource { get; }
+        public LocalWinGetSource GOGSource { get; }
+        public LocalWinGetSource MicrosoftStoreSource { get; }
 
         public readonly string PowerShellPath;
         public readonly string PowerShellPromptArgs;
         public readonly string PowerShellInlineArgs;
         public string WinGetBundledPath;
 
-        public WinGet() : base()
+        public WinGet()
         {
             PowerShellPath = Path.Join(Environment.SystemDirectory, "windowspowershell\\v1.0\\powershell.exe");
             PowerShellPromptArgs = "-ExecutionPolicy Bypass -NoLogo -NoProfile";
@@ -58,7 +58,8 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
 
                         Process p = new()
                         {
-                            StartInfo = new ProcessStartInfo() {
+                            StartInfo = new ProcessStartInfo
+                            {
                                 FileName = PowerShellPath,
                                 Arguments = PowerShellPromptArgs,
                                 RedirectStandardInput = true,
@@ -73,7 +74,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
                      })
             ];
 
-            Capabilities = new ManagerCapabilities()
+            Capabilities = new ManagerCapabilities
             {
                 CanRunAsAdmin = true,
                 CanSkipIntegrityChecks = true,
@@ -86,7 +87,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
                 SupportsCustomSources = true,
                 SupportsCustomPackageIcons = true,
                 SupportsCustomPackageScreenshots = true,
-                Sources = new SourceCapabilities()
+                Sources = new SourceCapabilities
                 {
                     KnowsPackageCount = false,
                     KnowsUpdateDate = true,
@@ -94,7 +95,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
                 }
             };
 
-            Properties = new ManagerProperties()
+            Properties = new ManagerProperties
             {
                 Name = "Winget",
                 DisplayName = "WinGet",
@@ -113,8 +114,9 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
 
             SourceProvider = new WinGetSourceProvider(this);
             PackageDetailsProvider = new WinGetPackageDetailsProvider(this);
+            OperationProvider = new WinGetOperationProvider(this);
 
-            LocalPcSource = new LocalWingetSource(this, CoreTools.Translate("Local PC"), IconType.LocalPc);
+            LocalPcSource = new LocalWinGetSource(this, CoreTools.Translate("Local PC"), IconType.LocalPc);
             AndroidSubsystemSource = new(this, CoreTools.Translate("Android Subsystem"), IconType.Android);
             SteamSource = new(this, "Steam", IconType.Steam);
             UbisoftConnectSource = new(this, "Ubisoft Connect", IconType.UPlay);
@@ -139,184 +141,49 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
 
         public ManagerSource GetLocalSource(string id)
         {
-            try
+            var IdPieces = id.Split('\\');
+            if (IdPieces[0] == "MSIX")
             {
-                // Check if source is android
-                bool AndroidValid = true;
-                foreach (char c in id)
+                return MicrosoftStoreSource;
+            }
+            else
+            {
+                string MeaningfulId = IdPieces[^1];
+
+                // Fast Local PC Check
+                if (MeaningfulId[0] == '{')
                 {
-                    if (!"abcdefghijklmnopqrstuvwxyz.".Contains(c))
-                    {
-                        AndroidValid = false;
-                        break;
-                    }
+                    return LocalPcSource;
                 }
 
-                if (AndroidValid && id.Count(x => x == '.') >= 2)
+                // Check if source is android
+                if(MeaningfulId.Count(x => x == '.') >= 2 && MeaningfulId.All(c => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.'))
                 {
                     return AndroidSubsystemSource;
                 }
 
                 // Check if source is Steam
-                if ((id == "Steam" || id.Contains("Steam App ")) && id.Split("Steam App").Length >= 2 && !id.Split("Steam App")[1].Trim().Any(x => !"1234567890".Contains(x)))
+                if (MeaningfulId == "Steam" || MeaningfulId.StartsWith("Steam App"))
                 {
                     return SteamSource;
                 }
 
                 // Check if source is Ubisoft Connect
-                if (id == "Uplay" || (id.Contains("Uplay Install ") && id.Split("Uplay Install").Length >= 2 && !id.Split("Uplay Install")[1].Trim().Any(x => !"1234567890".Contains(x))))
+                if (MeaningfulId == "Uplay" || MeaningfulId.StartsWith("Uplay Install"))
                 {
                     return UbisoftConnectSource;
                 }
 
                 // Check if source is GOG
-                if (id.EndsWith("_is1") && !id.Split("_is1")[0].Any(x => !"1234567890".Contains(x)))
+                if (MeaningfulId.EndsWith("_is1") &&
+                    MeaningfulId.Replace("_is1", "").All(c => (c >= '0' && c <= '9')))
                 {
                     return GOGSource;
                 }
 
-                // Check if source is Microsoft Store
-                if (id.Count(x => x == '_') == 1 && (id.Split('_')[^1].Length == 14 | id.Split('_')[^1].Length == 13))
-                {
-                    return MicrosoftStoreSource;
-                }
-
-                // Otherwise, Source is localpc
+                // Otherwise they are Local PC
                 return LocalPcSource;
             }
-            catch (Exception ex)
-            {
-                Logger.Warn($"Could not parse local source for package {id}");
-                Logger.Warn(ex);
-                return LocalPcSource;
-            }
-        }
-
-        public override string[] GetInstallParameters(IPackage package, IInstallationOptions options)
-        {
-            List<string> parameters = GetUninstallParameters(package, options).ToList();
-            parameters[0] = Properties.InstallVerb;
-
-            parameters.Add("--accept-package-agreements");
-
-            if (options.SkipHashCheck)
-            {
-                parameters.Add("--ignore-security-hash");
-            }
-
-            if (options.CustomInstallLocation != "")
-            {
-                parameters.Add("--location"); parameters.Add($"\"{options.CustomInstallLocation}\"");
-            }
-
-            parameters.AddRange(options.Architecture switch
-                {
-                    Architecture.X86 => ["--architecture", "x86"],
-                    Architecture.X64 => ["--architecture", "x64"],
-                    Architecture.Arm64 => ["--architecture", "arm64"],
-                    _ => []
-                }
-            );
-            return parameters.ToArray();
-        }
-        public override string[] GetUpdateParameters(IPackage package, IInstallationOptions options)
-        {
-            if (package.Name.Contains("64-bit") || package.Id.ToLower().Contains("x64"))
-            {
-                options.Architecture = Architecture.X64;
-            }
-            else if (package.Name.Contains("32-bit") || package.Id.ToLower().Contains("x86"))
-            {
-                options.Architecture = Architecture.X86;
-            }
-
-            string[] parameters = GetInstallParameters(package, options);
-            parameters[0] = Properties.UpdateVerb;
-            List<string> p = parameters.ToList();
-            p.Add("--force");
-            p.Add("--include-unknown");
-            parameters = p.ToArray();
-            return parameters;
-        }
-
-        public override string[] GetUninstallParameters(IPackage package, IInstallationOptions options)
-        {
-            List<string> parameters = [Properties.UninstallVerb, "--id", $"\"{package.Id}\"", "--exact"];
-            if (!package.Source.IsVirtualManager)
-            {
-                parameters.AddRange(["--source", package.Source.Name]);
-            }
-
-            parameters.Add("--accept-source-agreements");
-
-            parameters.AddRange(options.InstallationScope switch
-                {
-                    PackageScope.Local => ["--scope", "user"],
-                    PackageScope.Global => ["--scope", "machine"],
-                    _ => []
-                }
-            );
-
-            if (!package.IsUpgradable && options.Version != "")
-            {
-                parameters.AddRange(["--version", $"\"{options.Version}\"", "--force"]);
-            }
-            else if (!package.IsUpgradable && package.Version != "Unknown")
-            {
-                parameters.AddRange(["--version", $"\"{package.Version}\""]);
-            }
-
-            if (options.InteractiveInstallation)
-            {
-                parameters.Add("--interactive");
-            }
-            else
-            {
-                parameters.AddRange(["--silent", "--disable-interactivity"]);
-            }
-
-            parameters.AddRange(options.CustomParameters);
-
-            return parameters.ToArray();
-        }
-
-        public override OperationVeredict GetInstallOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            string output_string = string.Join("\n", Output);
-
-            if (ReturnCode == -1978334967) // Use https://www.rapidtables.com/convert/number/hex-to-decimal.html for easy UInt(hex) to Int(dec) conversion
-            {
-                return OperationVeredict.Succeeded; // TODO: Needs restart
-            }
-
-            if (ReturnCode == -1978335215)
-            {
-                return OperationVeredict.Failed; // TODO: Needs skip checksum
-            }
-
-            if (output_string.Contains("No applicable upgrade found") || output_string.Contains("No newer package versions are available from the configured sources"))
-            {
-                return OperationVeredict.Succeeded;
-            }
-            return ReturnCode == 0 ? OperationVeredict.Succeeded : OperationVeredict.Failed;
-        }
-
-        public override OperationVeredict GetUpdateOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            return GetInstallOperationVeredict(package, options, ReturnCode, Output);
-        }
-
-        public override OperationVeredict GetUninstallOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            string output_string = string.Join("\n", Output);
-
-            if (output_string.Contains("1603") || output_string.Contains("0x80070005") || output_string.Contains("Access is denied"))
-            {
-                options.RunAsAdministrator = true;
-                return OperationVeredict.AutoRetry;
-            }
-
-            return ReturnCode == 0 ? OperationVeredict.Succeeded : OperationVeredict.Failed;
         }
 
         protected override async Task<ManagerStatus> LoadManager()
@@ -348,7 +215,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
 
             Process process = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = status.ExecutablePath,
                     Arguments = Properties.ExecutableCallArgs + " --version",
@@ -370,7 +237,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
 
             process = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = PowerShellPath,
                     Arguments = PowerShellInlineArgs + " -Command Write-Output (Get-Module -Name Microsoft.WinGet.Client).Version",
@@ -416,7 +283,7 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
         {
             Process p = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = Status.ExecutablePath,
                     Arguments = Properties.ExecutableCallArgs + " source update --disable-interactivity",
@@ -440,13 +307,13 @@ namespace UniGetUI.PackageEngine.Managers.WingetManager
         }
     }
 
-    public class LocalWingetSource : ManagerSource
+    public class LocalWinGetSource : ManagerSource
     {
         private readonly string name;
         private readonly IconType __icon_id;
         public override IconType IconId { get => __icon_id; }
 
-        public LocalWingetSource(WinGet manager, string name, IconType iconId)
+        public LocalWinGetSource(WinGet manager, string name, IconType iconId)
             : base(manager, name, new Uri("https://microsoft.com/local-pc-source"), isVirtualManager: true)
         {
             this.name = name;

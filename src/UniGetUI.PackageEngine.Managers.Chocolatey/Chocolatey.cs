@@ -23,9 +23,9 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
         public static new string[] FALSE_PACKAGE_IDS = ["Directory", "", "Did", "Features?", "Validation", "-", "being", "It", "Error", "L'accs", "Maximum", "This", "Output is package name ", "operable", "Invalid"];
         public static new string[] FALSE_PACKAGE_VERSIONS = ["", "Did", "Features?", "Validation", "-", "being", "It", "Error", "L'accs", "Maximum", "This", "packages", "current version", "installed version", "is", "program", "validations", "argument", "no"];
 
-        public Chocolatey() : base()
+        public Chocolatey()
         {
-            Capabilities = new ManagerCapabilities()
+            Capabilities = new ManagerCapabilities
             {
                 CanRunAsAdmin = true,
                 CanSkipIntegrityChecks = true,
@@ -36,17 +36,17 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
                 SupportsPreRelease = true,
                 SupportsCustomSources = true,
                 SupportsCustomPackageIcons = true,
-                Sources = new SourceCapabilities()
+                Sources = new SourceCapabilities
                 {
                     KnowsPackageCount = false,
                     KnowsUpdateDate = false,
                 }
             };
 
-            Properties = new ManagerProperties()
+            Properties = new ManagerProperties
             {
                 Name = "Chocolatey",
-                Description = CoreTools.Translate("The classic package manager for windows. You'll find everything there. <br>Contains: <b>General Software</b>"),
+                Description = CoreTools.Translate("The classical package manager for windows. You'll find everything there. <br>Contains: <b>General Software</b>"),
                 IconId = IconType.Chocolatey,
                 ColorIconId = "choco_color",
                 ExecutableFriendlyName = "choco.exe",
@@ -61,13 +61,14 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
 
             SourceProvider = new ChocolateySourceProvider(this);
             PackageDetailsProvider = new ChocolateyDetailsProvider(this);
+            OperationProvider = new ChocolateyOperationProvider(this);
         }
         
         protected override async Task<Package[]> GetAvailableUpdates_UnSafe()
         {
             Process p = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = Status.ExecutablePath,
                     Arguments = Properties.ExecutableCallArgs + " outdated",
@@ -121,7 +122,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
         {
             Process p = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = Status.ExecutablePath,
                     Arguments = Properties.ExecutableCallArgs + " list",
@@ -169,107 +170,6 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
             logger.Close(p.ExitCode);
 
             return Packages.ToArray();
-        }
-        public override OperationVeredict GetInstallOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            string output_string = string.Join("\n", Output);
-
-            if (ReturnCode is 1641 or 0)
-            {
-                return OperationVeredict.Succeeded;
-            }
-
-            if (ReturnCode == 3010)
-            {
-                return OperationVeredict.Succeeded; // TODO: Restart required
-            }
-
-            if ((output_string.Contains("Run as administrator") || output_string.Contains("The requested operation requires elevation") || output_string.Contains("ERROR: Exception calling \"CreateDirectory\" with \"1\" argument(s): \"Access to the path")) && !options.RunAsAdministrator)
-            {
-                options.RunAsAdministrator = true;
-                return OperationVeredict.AutoRetry;
-            }
-
-            return OperationVeredict.Failed;
-        }
-
-        public override OperationVeredict GetUpdateOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            return GetInstallOperationVeredict(package, options, ReturnCode, Output);
-        }
-
-        public override OperationVeredict GetUninstallOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            string output_string = string.Join("\n", Output);
-
-            if (ReturnCode is 1641 or 1614 or 1605 or 0)
-            {
-                return OperationVeredict.Succeeded;
-            }
-
-            if (ReturnCode == 3010)
-            {
-                return OperationVeredict.Succeeded; // TODO: Restart required
-            }
-
-            if ((output_string.Contains("Run as administrator") || output_string.Contains("The requested operation requires elevation")) && !options.RunAsAdministrator)
-            {
-                options.RunAsAdministrator = true;
-                return OperationVeredict.AutoRetry;
-            }
-
-            return OperationVeredict.Failed;
-        }
-        public override string[] GetInstallParameters(IPackage package, IInstallationOptions options)
-        {
-            List<string> parameters = GetUninstallParameters(package, options).ToList();
-            parameters[0] = Properties.InstallVerb;
-            parameters.Add("--no-progress");
-
-            if (options.Architecture == Architecture.X86)
-            {
-                parameters.Add("--forcex86");
-            }
-
-            if (options.PreRelease)
-            {
-                parameters.Add("--prerelease");
-            }
-
-            if (options.SkipHashCheck)
-            {
-                parameters.AddRange(["--ignore-checksums", "--force"]);
-            }
-
-            if (options.Version != "")
-            {
-                parameters.AddRange([$"--version={options.Version}", "--allow-downgrade"]);
-            }
-
-            return parameters.ToArray();
-        }
-        public override string[] GetUpdateParameters(IPackage package, IInstallationOptions options)
-        {
-            string[] parameters = GetInstallParameters(package, options);
-            parameters[0] = Properties.UpdateVerb;
-            return parameters;
-        }
-
-        public override string[] GetUninstallParameters(IPackage package, IInstallationOptions options)
-        {
-            List<string> parameters = [Properties.UninstallVerb, package.Id, "-y"];
-
-            if (options.CustomParameters is not null)
-            {
-                parameters.AddRange(options.CustomParameters);
-            }
-
-            if (options.InteractiveInstallation)
-            {
-                parameters.Add("--notsilent");
-            }
-
-            return parameters.ToArray();
         }
 
         protected override async Task<ManagerStatus> LoadManager()
@@ -388,7 +288,7 @@ namespace UniGetUI.PackageEngine.Managers.ChocolateyManager
 
             Process process = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = status.ExecutablePath,
                     Arguments = "--version",

@@ -19,9 +19,9 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
         public static new string[] FALSE_PACKAGE_IDS = [""];
         public static new string[] FALSE_PACKAGE_VERSIONS = [""];
 
-        public PowerShell() : base()
+        public PowerShell()
         {
-            Capabilities = new ManagerCapabilities()
+            Capabilities = new ManagerCapabilities
             {
                 CanRunAsAdmin = true,
                 CanSkipIntegrityChecks = true,
@@ -30,14 +30,14 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
                 SupportsCustomSources = true,
                 SupportsPreRelease = true,
                 SupportsCustomPackageIcons = true,
-                Sources = new SourceCapabilities()
+                Sources = new SourceCapabilities
                 {
                     KnowsPackageCount = false,
                     KnowsUpdateDate = false,
                 }
             };
 
-            Properties = new ManagerProperties()
+            Properties = new ManagerProperties
             {
                 Name = "PowerShell",
                 DisplayName = "PowerShell 5.x",
@@ -55,12 +55,13 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
             };
 
             SourceProvider = new PowerShellSourceProvider(this);
+            OperationProvider = new PowerShellOperationProvider(this);
         }
         protected override async Task<Package[]> GetAvailableUpdates_UnSafe()
         {
             Process p = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = Status.ExecutablePath,
                     Arguments = "",
@@ -146,7 +147,7 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
         {
             Process p = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = Status.ExecutablePath,
                     Arguments = Properties.ExecutableCallArgs + " Get-InstalledModule",
@@ -199,81 +200,6 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
             return Packages.ToArray();
         }
 
-        public override OperationVeredict GetInstallOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            return GetUninstallOperationVeredict(package, options, ReturnCode, Output);
-        }
-
-        public override OperationVeredict GetUpdateOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            return GetUninstallOperationVeredict(package, options, ReturnCode, Output);
-        }
-
-        public override OperationVeredict GetUninstallOperationVeredict(IPackage package, IInstallationOptions options, int ReturnCode, string[] Output)
-        {
-            string output_string = string.Join("\n", Output);
-
-            if (output_string.Contains("AdminPrivilegesAreRequired") && !options.RunAsAdministrator)
-            {
-                options.RunAsAdministrator = true;
-                return OperationVeredict.AutoRetry;
-            }
-
-            return ReturnCode == 0 ? OperationVeredict.Succeeded : OperationVeredict.Failed;
-        }
-        public override string[] GetInstallParameters(IPackage package, IInstallationOptions options)
-        {
-            List<string> parameters = GetUpdateParameters(package, options).ToList();
-            parameters[0] = Properties.InstallVerb;
-
-            parameters.AddRange(["-AllowClobber"]);
-            if (package.Scope == PackageScope.Global)
-            {
-                parameters.AddRange(["-Scope", "AllUsers"]);
-            }
-            else
-            {
-                parameters.AddRange(["-Scope", "CurrentUser"]);
-            }
-
-            if (options.Version != "")
-            {
-                parameters.AddRange(["-RequiredVersion", options.Version]);
-            }
-
-            return parameters.ToArray();
-
-        }
-        public override string[] GetUpdateParameters(IPackage package, IInstallationOptions options)
-        {
-            List<string> parameters = GetUninstallParameters(package, options).ToList();
-            parameters[0] = Properties.UpdateVerb;
-
-            if (options.PreRelease)
-            {
-                parameters.Add("-AllowPrerelease");
-            }
-
-            if (options.SkipHashCheck)
-            {
-                parameters.Add("-SkipPublisherCheck");
-            }
-
-            return parameters.ToArray();
-        }
-
-        public override string[] GetUninstallParameters(IPackage package, IInstallationOptions options)
-        {
-            List<string> parameters = [Properties.UninstallVerb, "-Name", package.Id, "-Confirm:$false", "-Force"];
-
-            if (options.CustomParameters != null)
-            {
-                parameters.AddRange(options.CustomParameters);
-            }
-
-            return parameters.ToArray();
-        }
-
         protected override async Task<ManagerStatus> LoadManager()
         {
             ManagerStatus status = new()
@@ -289,7 +215,7 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
 
             Process process = new()
             {
-                StartInfo = new ProcessStartInfo()
+                StartInfo = new ProcessStartInfo
                 {
                     FileName = status.ExecutablePath,
                     Arguments = Properties.ExecutableCallArgs + " \"echo $PSVersionTable\"",
