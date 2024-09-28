@@ -3,8 +3,8 @@
         "total": 11708,
         "done": 5112,
         "packages_with_icon": 5112,
-        "packages_with_screenshot": 585,
-        "total_screenshots": 1820
+        "packages_with_screenshot": 586,
+        "total_screenshots": 1821
     },
     "icons_and_screenshots": {
         "010memorizer": {
@@ -16057,7 +16057,7 @@
             "images": []
         },
         "git": {
-            "icon": "https://raw.githubusercontent.com/git/git-scm.com/main/public/images/logos/downloads/Git-Icon-1788C.png",
+            "icon": "https://cdn.meowcat285.com/public/UnigetIcons/git.2.46.2.png",
             "images": [
                 "https://i.postimg.cc/QMmHqPP9/git1.png",
                 "https://i.postimg.cc/cHJ6khyD/git2.png",
@@ -36651,8 +36651,10 @@
             "images": []
         },
         "sharex": {
-            "icon": "https://community.chocolatey.org/content/packageimages/sharex.15.0.0.png",
-            "images": []
+            "icon": "https://community.chocolatey.org/content/packageimages/sharex.16.1.0.png",
+            "images": [
+                "https://getsharex.com/img/ShareX_Screenshot.png"
+            ]
         },
         "sharik": {
             "icon": "",
